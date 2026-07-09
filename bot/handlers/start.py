@@ -93,11 +93,4 @@ async def set_language(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.callback_query(F.data == "back:main")
-async def back_to_main(callback: CallbackQuery, state: FSMContext):
-    await state.clear()
-    await callback.message.edit_text(
-        "🏠 <b>Главное меню</b>",
-        parse_mode="HTML",
-    )
-    await callback.answer()
+

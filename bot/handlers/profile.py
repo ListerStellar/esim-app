@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 
 from api_client import backend
-from keyboards.kb import language_kb, back_to_menu_kb
+from keyboards.kb import language_kb
 
 router = Router()
 
@@ -30,7 +30,6 @@ async def show_profile(message: Message):
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🌐 Сменить язык", callback_data="change_language")],
-        [InlineKeyboardButton(text="◀️ Назад", callback_data="back:main")],
     ])
 
     await message.answer(text, reply_markup=kb, parse_mode="HTML")
@@ -56,7 +55,6 @@ async def show_orders(message: Message):
     if not orders:
         await message.answer(
             "📦 У тебя пока нет заказов.\n\nНажми <b>🌍 Купить eSIM</b> для начала!",
-            reply_markup=back_to_menu_kb(),
             parse_mode="HTML",
         )
         return
@@ -70,6 +68,8 @@ async def show_orders(message: Message):
         "failed": "❌",
     }
 
+    from keyboards.kb import orders_kb
+
     for order in orders[:10]:  # последние 10
         emoji = STATUS_EMOJI.get(order.status, "❓")
         dt = datetime.fromisoformat(order.created_at) if isinstance(order.created_at, str) else order.created_at
@@ -79,7 +79,42 @@ async def show_orders(message: Message):
             f"   {dt.strftime('%d.%m.%Y %H:%M')}\n\n"
         )
 
-    await message.answer(text, reply_markup=back_to_menu_kb(), parse_mode="HTML")
+    await message.answer(text, reply_markup=orders_kb(orders), parse_mode="HTML")
+
+from aiogram import Bot
+@router.callback_query(F.data.startswith("esim_qr:"))
+async def show_esim_qr(callback: CallbackQuery, bot: Bot):
+    order_id = int(callback.data.split(":")[1])
+    
+    user = await backend.get_user_by_telegram_id(callback.from_user.id)
+    if not user:
+        return
+        
+    orders = await backend.get_user_orders(user.id)
+    order = next((o for o in orders if o.id == order_id), None)
+    
+    if not order or order.status != "activated":
+        await callback.answer("Заказ не найден или еще не активирован", show_alert=True)
+        return
+        
+    import base64
+    from aiogram.types import BufferedInputFile
+    
+    qr_bytes = base64.b64decode(order.esim_qr_code)
+    photo = BufferedInputFile(qr_bytes, filename=f"esim_qr_{order.id}.png")
+    
+    text = (
+        f"✅ <b>Ваша eSIM #{order.id}</b>\n\n"
+        f"🌍 <b>Страна:</b> {order.country_name}\n"
+        f"📊 <b>Трафик:</b> {order.data_gb} ГБ\n"
+        f"⏳ <b>Срок:</b> {order.duration_days} дней\n\n"
+        f"📱 <b>ICCID:</b> <code>{order.esim_iccid}</code>\n"
+        f"🔑 <b>Код активации:</b>\n<code>{order.esim_activation_code}</code>\n\n"
+        f"Отсканируйте QR-код выше камерой телефона или введите код активации вручную."
+    )
+    
+    await bot.send_photo(chat_id=callback.from_user.id, photo=photo, caption=text, parse_mode="HTML")
+    await callback.answer()
 
 
 @router.message(F.text == "❓ Как установить eSIM")
@@ -100,7 +135,7 @@ async def how_to_install(message: Message):
         "• Нужен Wi-Fi или мобильный интернет для активации\n\n"
         "❓ Остались вопросы? Напиши в поддержку."
     )
-    await message.answer(text, reply_markup=back_to_menu_kb(), parse_mode="HTML")
+    await message.answer(text, parse_mode="HTML")
 
 
 @router.message(F.text == "💬 Поддержка")

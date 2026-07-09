@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, BufferedInputFile
 from aiogram.fsm.context import FSMContext
 
 from api_client import backend
-from keyboards.kb import payment_kb, back_to_menu_kb
+from keyboards.kb import payment_kb
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -34,7 +34,6 @@ async def send_esim_qr(bot: Bot, telegram_id: int, data: dict):
             f"📋 Заказ #{data.order_id} | ICCID: <code>{data.iccid}</code>"
         ),
         parse_mode="HTML",
-        reply_markup=back_to_menu_kb(),
     )
 
 
@@ -77,7 +76,7 @@ async def pay_with_balance(callback: CallbackQuery, state: FSMContext, bot: Bot)
     
     res = await backend.buy_with_balance(callback.from_user.id, plan_id)
     if not res.success:
-        await callback.message.edit_text(f"❌ Ошибка: {res.error}", reply_markup=back_to_menu_kb())
+        await callback.message.edit_text(f"❌ Ошибка: {res.error}")
         await callback.answer()
         return
 
@@ -118,6 +117,5 @@ async def cancel_order(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(
         "❌ Заказ отменён. Деньги не были списаны.",
-        reply_markup=back_to_menu_kb(),
     )
     await callback.answer()

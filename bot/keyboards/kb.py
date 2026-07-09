@@ -16,7 +16,6 @@ def countries_kb(countries: list, names: dict) -> InlineKeyboardMarkup:
         name = names.get(code, code)
         buttons.append(InlineKeyboardButton(text=name, callback_data=f"country:{code}"))
     rows = [buttons[i:i+2] for i in range(0, len(buttons), 2)]
-    rows.append([InlineKeyboardButton(text="◀️ Назад", callback_data="back:main")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 def plans_kb(plans: list) -> InlineKeyboardMarkup:
@@ -56,10 +55,7 @@ def language_kb() -> InlineKeyboardMarkup:
     ])
 
 
-def back_to_menu_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🏠 Главное меню", callback_data="back:main")]
-    ])
+
 
 
 def support_kb() -> InlineKeyboardMarkup:
@@ -68,5 +64,14 @@ def support_kb() -> InlineKeyboardMarkup:
     support_username = os.getenv("SUPPORT_USERNAME", config.BOT_USERNAME)
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💬 Написать в поддержку", url=f"https://t.me/{support_username}")],
-        [InlineKeyboardButton(text="◀️ Назад", callback_data="back:main")],
     ])
+
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+def orders_kb(orders: list) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for order in orders[:10]:
+        if order.status == "activated":
+            builder.button(text=f"📲 QR-код #{order.id} ({order.country_name})", callback_data=f"esim_qr:{order.id}")
+    builder.adjust(1)
+    return builder.as_markup()

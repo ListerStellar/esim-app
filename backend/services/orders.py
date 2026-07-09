@@ -25,7 +25,7 @@ async def process_payment(order_id: int):
     try:
         # 1. Активация eSIM
         activation = await activate_esim(plan)
-        order = await set_order_activated(
+        await set_order_activated(
             order_id=order.id,
             iccid=activation.iccid,
             qr_code=activation.qr_code_base64,
@@ -44,7 +44,7 @@ async def process_payment(order_id: int):
                     await update_user_balance(referrer.telegram_id, bonus)
                     await create_referral_bonus(referrer.id, user_model.id, bonus)
         
-        return order
+        return await get_order_by_id(order_id)
     except Exception as e:
         logger.error(f"Failed to process payment for order {order_id}: {e}")
         return None
@@ -72,10 +72,12 @@ async def buy_with_balance_service(telegram_id: int, plan_id: str) -> dict:
         duration_days=plan.duration_days,
         price_eur=plan.price_eur,
     )
-    order = await set_order_paid(order.id, payment_id="balance")
+    await set_order_paid(order.id, payment_id="balance")
     
     activated_order = await process_payment(order.id)
     if not activated_order:
+        from database.crud import set_order_failed
+        await set_order_failed(order.id)
         return {"success": False, "error": "Ошибка активации eSIM"}
     
     return {
@@ -84,9 +86,9 @@ async def buy_with_balance_service(telegram_id: int, plan_id: str) -> dict:
         "country_name": activated_order.country_name,
         "data_gb": activated_order.data_gb,
         "duration_days": activated_order.duration_days,
-        "iccid": activated_order.iccid,
-        "activation_code": activated_order.activation_code,
-        "qr_code_base64": activated_order.qr_code,
+        "iccid": activated_order.esim_iccid,
+        "activation_code": activated_order.esim_activation_code,
+        "qr_code_base64": activated_order.esim_qr_code,
     }
 
 async def buy_with_stripe_service(telegram_id: int, plan_id: str) -> dict:
@@ -109,9 +111,11 @@ async def buy_with_stripe_service(telegram_id: int, plan_id: str) -> dict:
     )
 
     if not config.STRIPE_SECRET_KEY or config.STRIPE_SECRET_KEY == "" or config.STRIPE_SECRET_KEY == "mock":
-        order = await set_order_paid(order.id, payment_id="test_payment_mock")
+        await set_order_paid(order.id, payment_id="test_payment_mock")
         activated_order = await process_payment(order.id)
         if not activated_order:
+            from database.crud import set_order_failed
+            await set_order_failed(order.id)
             return {"success": False, "error": "Ошибка активации eSIM в тестовом режиме"}
         
         return {
@@ -121,18 +125,24 @@ async def buy_with_stripe_service(telegram_id: int, plan_id: str) -> dict:
             "country_name": activated_order.country_name,
             "data_gb": activated_order.data_gb,
             "duration_days": activated_order.duration_days,
-            "iccid": activated_order.iccid,
-            "activation_code": activated_order.activation_code,
-            "qr_code_base64": activated_order.qr_code,
+            "iccid": activated_order.esim_iccid,
+            "activation_code": activated_order.esim_activation_code,
+            "qr_code_base64": activated_order.esim_qr_code,
         }
 
-    payment_url = await create_payment_link(
-        order_id=order.id,
-        plan_name=f"{plan.country_name} {plan.data_gb}ГБ/{plan.duration_days}дн",
-        price_eur=plan.price_eur,
-        user_telegram_id=telegram_id,
-    )
-    return {"success": True, "mock": False, "payment_url": payment_url, "order_id": order.id, "price_eur": plan.price_eur}
+    try:
+        payment_url = await create_payment_link(
+            order_id=order.id,
+            plan_name=f"{plan.country_name} {plan.data_gb}ГБ/{plan.duration_days}дн",
+            price_eur=plan.price_eur,
+            user_telegram_id=telegram_id,
+        )
+        return {"success": True, "mock": False, "payment_url": payment_url, "order_id": order.id, "price_eur": plan.price_eur}
+    except Exception as e:
+        logger.error(f"Payment gateway error: {e}")
+        from database.crud import set_order_failed
+        await set_order_failed(order.id)
+        return {"success": False, "error": "Ошибка платежной системы"}
 
 async def check_payment_service(order_id: int) -> dict:
     order = await get_order_by_id(order_id)
@@ -153,9 +163,9 @@ async def check_payment_service(order_id: int) -> dict:
             "country_name": activated_order.country_name,
             "data_gb": activated_order.data_gb,
             "duration_days": activated_order.duration_days,
-            "iccid": activated_order.iccid,
-            "activation_code": activated_order.activation_code,
-            "qr_code_base64": activated_order.qr_code,
+            "iccid": activated_order.esim_iccid,
+            "activation_code": activated_order.esim_activation_code,
+            "qr_code_base64": activated_order.esim_qr_code,
         }
         
     return {"success": True, "status": order.status}

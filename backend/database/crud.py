@@ -116,6 +116,15 @@ async def set_order_paid(order_id: int, payment_id: str):
             await session.commit()
 
 
+async def set_order_failed(order_id: int):
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(Order).where(Order.id == order_id))
+        order = result.scalar_one_or_none()
+        if order:
+            order.status = "failed"
+            await session.commit()
+
+
 async def set_order_activated(order_id: int, iccid: str, qr_code: str, activation_code: str):
     from datetime import datetime
     async with AsyncSessionLocal() as session:
