@@ -2,7 +2,7 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from database.crud import get_user_by_telegram_id, count_referrals
+from api_client import backend
 from config import config
 
 router = Router()
@@ -10,7 +10,7 @@ router = Router()
 
 @router.message(F.text == "🎁 Реферальная программа")
 async def show_referral(message: Message, bot: Bot):
-    user = await get_user_by_telegram_id(message.from_user.id)
+    user = await backend.get_user_by_telegram_id(message.from_user.id)
     if not user:
         await message.answer("Напиши /start для начала")
         return
@@ -18,7 +18,7 @@ async def show_referral(message: Message, bot: Bot):
     bot_info = await bot.get_me()
     bot_username = bot_info.username
     ref_link = f"https://t.me/{bot_username}?start=ref_{user.referral_code}"
-    ref_count = await count_referrals(user.id)
+    ref_count = await backend.count_referrals(user.id)
 
     text = (
         f"🎁 <b>Реферальная программа</b>\n\n"

@@ -1,7 +1,7 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 
-from database.crud import get_user_by_telegram_id, get_user_orders
+from api_client import backend
 from keyboards.kb import language_kb, back_to_menu_kb
 
 router = Router()
@@ -9,12 +9,12 @@ router = Router()
 
 @router.message(F.text == "👤 Профиль")
 async def show_profile(message: Message):
-    user = await get_user_by_telegram_id(message.from_user.id)
+    user = await backend.get_user_by_telegram_id(message.from_user.id)
     if not user:
         await message.answer("Пользователь не найден. Напиши /start")
         return
 
-    orders = await get_user_orders(user.id)
+    orders = await backend.get_user_orders(user.id)
     paid_count = sum(1 for o in orders if o.status in ("paid", "activated"))
 
     text = (
@@ -47,12 +47,12 @@ async def change_language(callback: CallbackQuery):
 
 @router.message(F.text == "📦 Мои заказы")
 async def show_orders(message: Message):
-    user = await get_user_by_telegram_id(message.from_user.id)
+    user = await backend.get_user_by_telegram_id(message.from_user.id)
     if not user:
         await message.answer("Напиши /start для начала")
         return
 
-    orders = await get_user_orders(user.id)
+    orders = await backend.get_user_orders(user.id)
     if not orders:
         await message.answer(
             "📦 У тебя пока нет заказов.\n\nНажми <b>🌍 Купить eSIM</b> для начала!",
@@ -61,6 +61,7 @@ async def show_orders(message: Message):
         )
         return
 
+    from datetime import datetime
     text = "📦 <b>История заказов</b>\n\n"
     STATUS_EMOJI = {
         "pending": "⏳",
@@ -71,10 +72,11 @@ async def show_orders(message: Message):
 
     for order in orders[:10]:  # последние 10
         emoji = STATUS_EMOJI.get(order.status, "❓")
+        dt = datetime.fromisoformat(order.created_at) if isinstance(order.created_at, str) else order.created_at
         text += (
             f"{emoji} <b>#{order.id}</b> — {order.country_name}\n"
             f"   {order.data_gb} ГБ / {order.duration_days} дн. — {order.price_eur}€\n"
-            f"   {order.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
+            f"   {dt.strftime('%d.%m.%Y %H:%M')}\n\n"
         )
 
     await message.answer(text, reply_markup=back_to_menu_kb(), parse_mode="HTML")
@@ -107,8 +109,7 @@ async def support(message: Message):
     await message.answer(
         "💬 <b>Поддержка</b>\n\n"
         "Работаем 9:00–21:00 (CET)\n"
-        "Ответ обычно в течение 30 минут.\n\n"
-        "Или напиши напрямую — @YOUR_SUPPORT_USERNAME",
+        "Ответ обычно в течение 30 минут.\n\n",
         reply_markup=support_kb(),
         parse_mode="HTML",
     )

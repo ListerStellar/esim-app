@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import Command
 
-from database.crud import get_stats, get_user_by_telegram_id, update_user_balance
+from api_client import backend
 from config import config
 
 router = Router()
@@ -17,7 +17,7 @@ async def admin_panel(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    stats = await get_stats()
+    stats = await backend.get_stats()
     text = (
         f"🔧 <b>Админ-панель</b>\n\n"
         f"👥 Пользователей: <b>{stats['total_users']}</b>\n"
@@ -36,7 +36,7 @@ async def admin_panel(message: Message):
 async def admin_stats(message: Message):
     if not is_admin(message.from_user.id):
         return
-    stats = await get_stats()
+    stats = await backend.get_stats()
     await message.answer(
         f"📊 Пользователей: {stats['total_users']}\n"
         f"📦 Заказов: {stats['total_orders']}\n"
@@ -60,10 +60,10 @@ async def add_balance(message: Message):
         await message.answer("Неверный формат")
         return
 
-    user = await get_user_by_telegram_id(user_tg_id)
+    user = await backend.get_user_by_telegram_id(user_tg_id)
     if not user:
         await message.answer("Пользователь не найден")
         return
 
-    await update_user_balance(user_tg_id, amount)
+    await backend.update_user_balance(user_tg_id, amount)
     await message.answer(f"✅ Пользователю {user.full_name} начислено {amount}€")

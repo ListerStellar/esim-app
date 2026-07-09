@@ -3,7 +3,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 
-from database.crud import get_or_create_user, set_user_language
+from api_client import backend
 from keyboards.kb import main_menu_kb, language_kb
 
 router = Router()
@@ -43,20 +43,34 @@ MAIN_MENU_TEXT = {
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
 
-    # Проверить реферальный код из /start deep link
+    # Проверить параметры из /start deep link
     args = message.text.split()
     referral_code = None
+    paid_order_id = None
     if len(args) > 1:
         param = args[1]
         if param.startswith("ref_"):
             referral_code = param[4:]
+        elif param.startswith("paid_"):
+            paid_order_id = param[5:]
 
-    user = await get_or_create_user(
+    user = await backend.get_or_create_user(
         telegram_id=message.from_user.id,
         username=message.from_user.username,
         full_name=message.from_user.full_name,
         referral_code_used=referral_code,
     )
+
+    if paid_order_id:
+        res = await backend.check_payment(paid_order_id)
+        if res.success and getattr(res, "status", "") == "activated":
+            from handlers.order import send_esim_qr
+            await message.answer("✅ Оплата подтверждена! Высылаем eSIM...")
+            await send_esim_qr(message.bot, message.from_user.id, res)
+            return
+        elif res.success and getattr(res, "status", "") == "paid":
+            await message.answer("⏳ Оплата получена, eSIM в процессе выпуска. Зайдите в 'Мои заказы' через пару минут.")
+            return
 
     await message.answer(
         WELCOME_TEXT.get(user.language, WELCOME_TEXT["ru"]),
@@ -68,7 +82,7 @@ async def cmd_start(message: Message, state: FSMContext):
 @router.callback_query(F.data.startswith("lang:"))
 async def set_language(callback: CallbackQuery):
     lang = callback.data.split(":")[1]
-    await set_user_language(callback.from_user.id, lang)
+    await backend.set_user_language(callback.from_user.id, lang)
 
     text = MAIN_MENU_TEXT.get(lang, MAIN_MENU_TEXT["ru"])
     await callback.message.edit_text(text, parse_mode="HTML")

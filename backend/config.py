@@ -7,7 +7,7 @@ load_dotenv()
 
 @dataclass
 class Config:
-    BOT_TOKEN: str = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+    BOT_USERNAME: str = os.getenv("BOT_USERNAME", "esim_advance_bot")
     ADMIN_IDS: list = None
     STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY", "")
     STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
@@ -21,7 +21,7 @@ class Config:
     REFERRAL_BONUS_EUR: float = float(os.getenv("REFERRAL_BONUS_EUR", "2.0"))
 
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///esim_bot.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://esim_user:esim_pass@db:5432/esim_db")
 
     def __post_init__(self):
         if self.ADMIN_IDS is None:

@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: esim_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-esim_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-esim_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-esim_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-esim_user} -d ${POSTGRES_DB:-esim_db}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: esim_backend
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  bot:
+    build: ./bot
+    container_name: esim_bot
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    container_name: esim_nginx
+    restart: always
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - bot
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    restart: always
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command:
+      - "http"
+      - "--url=${NGROK_DOMAIN}"
+      - "nginx:80"
+    depends_on:
+      - nginx
+
+volumes:
+  postgres_data:

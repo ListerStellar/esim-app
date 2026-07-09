@@ -34,8 +34,8 @@ async def create_payment_link(
             "order_id": str(order_id),
             "telegram_id": str(user_telegram_id),
         },
-        success_url="https://t.me/YOUR_BOT_USERNAME?start=paid_{order_id}",
-        cancel_url="https://t.me/YOUR_BOT_USERNAME?start=cancelled",
+        success_url=f"https://t.me/{config.BOT_USERNAME}?start=paid_{order_id}",
+        cancel_url=f"https://t.me/{config.BOT_USERNAME}?start=cancelled",
     )
     return session.url
 
