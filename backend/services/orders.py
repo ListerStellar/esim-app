@@ -52,14 +52,14 @@ async def process_payment(order_id: int):
 async def buy_with_balance_service(telegram_id: int, plan_id: str) -> dict:
     plan = get_plan_by_id(plan_id)
     if not plan:
-        return {"success": False, "error": "Тариф не найден"}
+        return {"success": False, "error": "plan_not_found"}
 
     user = await get_user_by_telegram_id(telegram_id)
     if not user:
-        return {"success": False, "error": "Пользователь не найден"}
+        return {"success": False, "error": "user_not_found"}
 
     if user.balance < plan.price_eur:
-        return {"success": False, "error": f"Недостаточно средств. Баланс: {user.balance}€, нужно {plan.price_eur}€"}
+        return {"success": False, "error": f"insufficient_funds|{user.balance}|{plan.price_eur}"}
 
     # Списываем баланс и создаем заказ
     await update_user_balance(telegram_id, -plan.price_eur)
@@ -78,7 +78,7 @@ async def buy_with_balance_service(telegram_id: int, plan_id: str) -> dict:
     if not activated_order:
         from database.crud import set_order_failed
         await set_order_failed(order.id)
-        return {"success": False, "error": "Ошибка активации eSIM"}
+        return {"success": False, "error": "esim_activation_error"}
     
     return {
         "success": True, 
@@ -94,11 +94,11 @@ async def buy_with_balance_service(telegram_id: int, plan_id: str) -> dict:
 async def buy_with_stripe_service(telegram_id: int, plan_id: str) -> dict:
     plan = get_plan_by_id(plan_id)
     if not plan:
-        return {"success": False, "error": "Тариф не найден"}
+        return {"success": False, "error": "plan_not_found"}
 
     user = await get_user_by_telegram_id(telegram_id)
     if not user:
-        return {"success": False, "error": "Пользователь не найден"}
+        return {"success": False, "error": "user_not_found"}
 
     order = await create_order(
         user_id=user.id,
@@ -116,7 +116,7 @@ async def buy_with_stripe_service(telegram_id: int, plan_id: str) -> dict:
         if not activated_order:
             from database.crud import set_order_failed
             await set_order_failed(order.id)
-            return {"success": False, "error": "Ошибка активации eSIM в тестовом режиме"}
+            return {"success": False, "error": "esim_activation_error_test"}
         
         return {
             "success": True, 
@@ -142,20 +142,20 @@ async def buy_with_stripe_service(telegram_id: int, plan_id: str) -> dict:
         logger.error(f"Payment gateway error: {e}")
         from database.crud import set_order_failed
         await set_order_failed(order.id)
-        return {"success": False, "error": "Ошибка платежной системы"}
+        return {"success": False, "error": "payment_system_error"}
 
 async def check_payment_service(order_id: int) -> dict:
     order = await get_order_by_id(order_id)
     if not order:
-        return {"success": False, "error": "Заказ не найден"}
+        return {"success": False, "error": "order_not_found"}
     
     if order.status == "activated":
-        return {"success": False, "error": "eSIM уже активирован и отправлен!"}
+        return {"success": False, "error": "esim_already_activated"}
         
     if order.status == "paid":
         activated_order = await process_payment(order_id)
         if not activated_order:
-            return {"success": False, "error": "Ошибка активации eSIM"}
+            return {"success": False, "error": "esim_activation_error"}
         return {
             "success": True,
             "status": "activated",

@@ -4,6 +4,7 @@ from aiogram.filters import Command
 
 from api_client import backend
 from config import config
+from locales import get_text
 
 router = Router()
 
@@ -17,17 +18,17 @@ async def admin_panel(message: Message):
     if not is_admin(message.from_user.id):
         return
 
+    user = await backend.get_user_by_telegram_id(message.from_user.id)
+    lang = user.language if user else "en"
+
     stats = await backend.get_stats()
-    text = (
-        f"🔧 <b>Админ-панель</b>\n\n"
-        f"👥 Пользователей: <b>{stats['total_users']}</b>\n"
-        f"📦 Заказов всего: <b>{stats['total_orders']}</b>\n"
-        f"✅ Оплаченных: <b>{stats['paid_orders']}</b>\n"
-        f"💰 Выручка: <b>{stats['revenue']}€</b>\n\n"
-        f"<b>Команды:</b>\n"
-        f"/stats — статистика\n"
-        f"/addbalance [user_id] [amount] — пополнить баланс\n"
-        f"/broadcast [text] — рассылка (скоро)\n"
+    text = get_text(
+        lang, 
+        "admin_panel",
+        total_users=stats['total_users'],
+        total_orders=stats['total_orders'],
+        paid_orders=stats['paid_orders'],
+        revenue=stats['revenue']
     )
     await message.answer(text, parse_mode="HTML")
 
@@ -36,34 +37,45 @@ async def admin_panel(message: Message):
 async def admin_stats(message: Message):
     if not is_admin(message.from_user.id):
         return
+        
+    user = await backend.get_user_by_telegram_id(message.from_user.id)
+    lang = user.language if user else "en"
+    
     stats = await backend.get_stats()
-    await message.answer(
-        f"📊 Пользователей: {stats['total_users']}\n"
-        f"📦 Заказов: {stats['total_orders']}\n"
-        f"✅ Оплачено: {stats['paid_orders']}\n"
-        f"💰 Выручка: {stats['revenue']}€"
+    text = get_text(
+        lang,
+        "admin_stats",
+        total_users=stats['total_users'],
+        total_orders=stats['total_orders'],
+        paid_orders=stats['paid_orders'],
+        revenue=stats['revenue']
     )
+    await message.answer(text)
 
 
 @router.message(Command("addbalance"))
 async def add_balance(message: Message):
     if not is_admin(message.from_user.id):
         return
+        
+    user_admin = await backend.get_user_by_telegram_id(message.from_user.id)
+    lang = user_admin.language if user_admin else "en"
+    
     parts = message.text.split()
     if len(parts) != 3:
-        await message.answer("Использование: /addbalance [telegram_id] [сумма]")
+        await message.answer(get_text(lang, "admin_addbalance_usage"))
         return
     try:
         user_tg_id = int(parts[1])
         amount = float(parts[2])
     except ValueError:
-        await message.answer("Неверный формат")
+        await message.answer(get_text(lang, "admin_invalid_format"))
         return
 
     user = await backend.get_user_by_telegram_id(user_tg_id)
     if not user:
-        await message.answer("Пользователь не найден")
+        await message.answer(get_text(lang, "admin_user_not_found"))
         return
 
     await backend.update_user_balance(user_tg_id, amount)
-    await message.answer(f"✅ Пользователю {user.full_name} начислено {amount}€")
+    await message.answer(get_text(lang, "admin_balance_added", name=user.full_name, amount=amount))

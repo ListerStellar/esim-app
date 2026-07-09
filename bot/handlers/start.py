@@ -5,38 +5,9 @@ from aiogram.fsm.context import FSMContext
 
 from api_client import backend
 from keyboards.kb import main_menu_kb, language_kb
+from locales import get_text
 
 router = Router()
-
-WELCOME_TEXT = {
-    "ru": (
-        "👋 Добро пожаловать в <b>eSIM Store</b>!\n\n"
-        "🌍 Мобильный интернет в 50+ странах\n"
-        "⚡️ Мгновенная активация — без очередей\n"
-        "💰 Дешевле местных операторов до 3 раз\n\n"
-        "Выбери язык / Choose language:"
-    ),
-    "cs": (
-        "👋 Vítejte v <b>eSIM Store</b>!\n\n"
-        "🌍 Mobilní internet ve 50+ zemích\n"
-        "⚡️ Okamžitá aktivace\n"
-        "💰 Levnější než místní operátoři\n\n"
-        "Vyberte jazyk / Choose language:"
-    ),
-    "en": (
-        "👋 Welcome to <b>eSIM Store</b>!\n\n"
-        "🌍 Mobile internet in 50+ countries\n"
-        "⚡️ Instant activation — no queues\n"
-        "💰 Up to 3x cheaper than local carriers\n\n"
-        "Choose language:"
-    ),
-}
-
-MAIN_MENU_TEXT = {
-    "ru": "🏠 <b>Главное меню</b>\n\nЧто хочешь сделать?",
-    "cs": "🏠 <b>Hlavní menu</b>\n\nCo chceš udělat?",
-    "en": "🏠 <b>Main Menu</b>\n\nWhat would you like to do?",
-}
 
 
 @router.message(CommandStart())
@@ -65,15 +36,15 @@ async def cmd_start(message: Message, state: FSMContext):
         res = await backend.check_payment(paid_order_id)
         if res.success and getattr(res, "status", "") == "activated":
             from handlers.order import send_esim_qr
-            await message.answer("✅ Оплата подтверждена! Высылаем eSIM...")
-            await send_esim_qr(message.bot, message.from_user.id, res)
+            await message.answer(get_text(user.language, "payment_success"))
+            await send_esim_qr(message.bot, message.from_user.id, res, user.language)
             return
         elif res.success and getattr(res, "status", "") == "paid":
-            await message.answer("⏳ Оплата получена, eSIM в процессе выпуска. Зайдите в 'Мои заказы' через пару минут.")
+            await message.answer(get_text(user.language, "payment_wait"))
             return
 
     await message.answer(
-        WELCOME_TEXT.get(user.language, WELCOME_TEXT["ru"]),
+        get_text(user.language, "welcome"),
         reply_markup=language_kb(),
         parse_mode="HTML",
     )
@@ -84,13 +55,10 @@ async def set_language(callback: CallbackQuery):
     lang = callback.data.split(":")[1]
     await backend.set_user_language(callback.from_user.id, lang)
 
-    text = MAIN_MENU_TEXT.get(lang, MAIN_MENU_TEXT["ru"])
+    text = get_text(lang, "main_menu")
     await callback.message.edit_text(text, parse_mode="HTML")
     await callback.message.answer(
-        "✅ Язык выбран!" if lang == "ru" else ("✅ Language set!" if lang == "en" else "✅ Jazyk nastaven!"),
-        reply_markup=main_menu_kb(),
+        get_text(lang, "lang_set"),
+        reply_markup=main_menu_kb(lang),
     )
     await callback.answer()
-
-
-
