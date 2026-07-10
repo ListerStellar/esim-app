@@ -13,7 +13,7 @@ class Config:
     
     # Backend connection
     BACKEND_URL: str = os.getenv("BACKEND_URL", "http://backend:8000")
-    INTERNAL_API_TOKEN: str = os.getenv("INTERNAL_API_TOKEN", "super-secret-internal-token")
+    INTERNAL_API_TOKEN: str = os.getenv("INTERNAL_API_TOKEN", "")
 
     # Settings
     REFERRAL_BONUS_EUR: float = float(os.getenv("REFERRAL_BONUS_EUR", "2.0"))
@@ -28,6 +28,14 @@ class Config:
         if self.ADMIN_IDS is None:
             admin_str = os.getenv("ADMIN_IDS", "")
             self.ADMIN_IDS = [int(x) for x in admin_str.split(",") if x.strip()]
+            
+        if not self.INTERNAL_API_TOKEN:
+            token_path = os.getenv("KEYS_DIR", "/app/keys") + "/internal_token.txt"
+            if os.path.exists(token_path):
+                with open(token_path, "r") as f:
+                    self.INTERNAL_API_TOKEN = f.read().strip()
+            else:
+                self.INTERNAL_API_TOKEN = "super-secret-internal-token"
 
 
 config = Config()

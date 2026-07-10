@@ -21,6 +21,10 @@ services:
     build: ./backend
     container_name: esim_backend
     restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - keys_data:/app/keys
     env_file:
       - .env
     depends_on:
@@ -31,6 +35,8 @@ services:
     build: ./bot
     container_name: esim_bot
     restart: always
+    volumes:
+      - keys_data:/app/keys:ro
     env_file:
       - .env
     depends_on:
@@ -63,3 +69,4 @@ services:
 
 volumes:
   postgres_data:
+  keys_data:
