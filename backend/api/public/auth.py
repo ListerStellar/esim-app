@@ -105,11 +105,17 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return await create_tokens_for_user(user, session)
 
 
+import time
+
 @router.post("/telegram", response_model=TokenResponse)
 async def login_via_telegram(req: TelegramLoginRequest, session: AsyncSession = Depends(get_session)):
     bot_token = os.getenv("BOT_TOKEN")
     if not bot_token:
         raise HTTPException(status_code=500, detail="Bot token not configured")
+        
+    # Check if auth data is outdated (older than 24 hours) to prevent replay attacks
+    if time.time() - req.auth_date > 86400:
+        raise HTTPException(status_code=401, detail="Telegram authentication data is outdated")
         
     data_check_string = "\n".join(
         f"{k}={v}" for k, v in sorted(req.model_dump(exclude={"hash"}, exclude_none=True).items())

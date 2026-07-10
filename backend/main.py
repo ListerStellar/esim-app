@@ -8,6 +8,15 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="eSIM Store API", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # В проде здесь должны быть конкретные домены
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 import hmac
 from auth.security import INTERNAL_API_TOKEN
 
