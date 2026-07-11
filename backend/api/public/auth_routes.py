@@ -15,8 +15,33 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
 
 from database.db import get_session, User, RefreshToken
 from auth.security import get_password_hash, verify_password, create_access_token, PUBLIC_KEY
+from config import config
+from authlib.integrations.starlette_client import OAuth
+from starlette.requests import Request
+from starlette.responses import RedirectResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+oauth = OAuth()
+oauth.register(
+    name='google',
+    client_id=config.GOOGLE_CLIENT_ID,
+    client_secret=config.GOOGLE_CLIENT_SECRET,
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'}
+)
+
+oauth.register(
+    name='apple',
+    client_id=config.APPLE_CLIENT_ID,
+    client_secret=config.APPLE_PRIVATE_KEY,
+    server_metadata_url='https://appleid.apple.com/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'name email',
+        'response_mode': 'form_post',
+        'response_type': 'code id_token'
+    }
+)
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -103,6 +128,94 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         raise HTTPException(status_code=403, detail="User is banned")
         
     return await create_tokens_for_user(user, session)
+
+
+async def _process_oauth_user(session: AsyncSession, email: str, google_id: str = None, apple_id: str = None, full_name: str = None) -> TokenResponse:
+    result = await session.execute(select(User).filter(User.email == email))
+    user = result.scalars().first()
+    
+    if user:
+        changed = False
+        if google_id and not user.google_id:
+            user.google_id = google_id
+            changed = True
+        if apple_id and not user.apple_id:
+            user.apple_id = apple_id
+            changed = True
+        if full_name and not user.full_name:
+            user.full_name = full_name
+            changed = True
+            
+        if changed:
+            await session.commit()
+            
+        if user.is_banned:
+            raise HTTPException(status_code=403, detail="User is banned")
+            
+        return await create_tokens_for_user(user, session)
+        
+    new_user = User(
+        email=email,
+        google_id=google_id,
+        apple_id=apple_id,
+        full_name=full_name,
+        referral_code=generate_referral_code()
+    )
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
+    
+    return await create_tokens_for_user(new_user, session)
+
+
+@router.get("/google/login")
+async def google_login(request: Request):
+    redirect_uri = request.url_for('google_callback')
+    return await oauth.google.authorize_redirect(request, str(redirect_uri))
+
+@router.get("/google/callback")
+async def google_callback(request: Request, session: AsyncSession = Depends(get_session)):
+    try:
+        token = await oauth.google.authorize_access_token(request)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"OAuth error: {str(e)}")
+        
+    user_info = token.get('userinfo')
+    if not user_info:
+        raise HTTPException(status_code=400, detail="Could not get user info from Google")
+        
+    email = user_info.get('email')
+    google_id = user_info.get('sub')
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Google account has no email")
+        
+    return await _process_oauth_user(session, email, google_id=google_id, full_name=user_info.get('name'))
+
+@router.get("/apple/login")
+async def apple_login(request: Request):
+    redirect_uri = request.url_for('apple_callback')
+    return await oauth.apple.authorize_redirect(request, str(redirect_uri))
+
+@router.post("/apple/callback")
+@router.get("/apple/callback")
+async def apple_callback(request: Request, session: AsyncSession = Depends(get_session)):
+    try:
+        token = await oauth.apple.authorize_access_token(request)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"OAuth error: {str(e)}")
+        
+    user_info = token.get('userinfo')
+    if not user_info:
+        raise HTTPException(status_code=400, detail="Could not get user info from Apple")
+    
+    email = user_info.get('email')
+    apple_id = user_info.get('sub')
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Apple account has no email")
+        
+    return await _process_oauth_user(session, email, apple_id=apple_id)
 
 
 import time

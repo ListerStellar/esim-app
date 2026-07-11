@@ -22,6 +22,8 @@ class User(Base):
     username: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     full_name: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(128), unique=True, nullable=True)
+    google_id: Mapped[Optional[str]] = mapped_column(String(128), unique=True, index=True, nullable=True)
+    apple_id: Mapped[Optional[str]] = mapped_column(String(128), unique=True, index=True, nullable=True)
     hashed_password: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
     language: Mapped[str] = mapped_column(String(8), default="en")
     balance: Mapped[float] = mapped_column(Float, default=0.0)

@@ -50,5 +50,19 @@ def generate():
     else:
         print("Internal API token already exists.")
 
+    SESSION_SECRET_PATH = os.path.join(KEYS_DIR, "session_secret.txt")
+    if not os.path.exists(SESSION_SECRET_PATH):
+        env_secret = os.getenv("SECRET_KEY")
+        if not env_secret:
+            print("Generating new session secret key...")
+            secret = secrets.token_urlsafe(64)
+            with open(SESSION_SECRET_PATH, "w") as f:
+                f.write(secret)
+            print("Session secret key generated.")
+        else:
+            print("Using SECRET_KEY from environment.")
+    else:
+        print("Session secret key already exists.")
+
 if __name__ == "__main__":
     generate()

@@ -17,6 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from starlette.middleware.sessions import SessionMiddleware
+from config import config
+app.add_middleware(SessionMiddleware, secret_key=config.SECRET_KEY)
+
 import hmac
 from auth.security import INTERNAL_API_TOKEN
 
@@ -25,7 +29,7 @@ async def verify_internal_token(x_internal_token: str = Header(...)):
         raise HTTPException(status_code=403, detail="Invalid internal token")
 
 from api.internal import users, catalog, transactions
-from api.public import webhooks, auth
+from api.public import webhooks, auth_routes
 from api.public import users as public_users
 
 @app.on_event("startup")
@@ -37,7 +41,7 @@ app.include_router(users.router, dependencies=[Depends(verify_internal_token)])
 app.include_router(catalog.router, dependencies=[Depends(verify_internal_token)])
 app.include_router(transactions.router, dependencies=[Depends(verify_internal_token)])
 
-app.include_router(auth.router, prefix="/api")
+app.include_router(auth_routes.router, prefix="/api")
 app.include_router(public_users.router, prefix="/api")
 app.include_router(webhooks.router)
 

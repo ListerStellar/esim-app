@@ -12,6 +12,15 @@ class Config:
     STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY", "")
     STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
+    # OAuth
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    APPLE_CLIENT_ID: str = os.getenv("APPLE_CLIENT_ID", "")
+    APPLE_TEAM_ID: str = os.getenv("APPLE_TEAM_ID", "")
+    APPLE_KEY_ID: str = os.getenv("APPLE_KEY_ID", "")
+    APPLE_PRIVATE_KEY: str = os.getenv("APPLE_PRIVATE_KEY", "").replace('\\n', '\n')
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-super-secret-session-key")
+
     # eSIM Provider API (подключить позже — Airalo / eSIM Go)
     ESIM_PROVIDER: str = os.getenv("ESIM_PROVIDER", "mock")  # "mock" | "airalo" | "esimgo"
     ESIM_API_KEY: str = os.getenv("ESIM_API_KEY", "")
@@ -27,6 +36,12 @@ class Config:
         if self.ADMIN_IDS is None:
             admin_str = os.getenv("ADMIN_IDS", "")
             self.ADMIN_IDS = [int(x) for x in admin_str.split(",") if x.strip()]
+
+        if not self.SECRET_KEY or self.SECRET_KEY == "your-super-secret-session-key":
+            secret_path = os.getenv("KEYS_DIR", "/app/keys") + "/session_secret.txt"
+            if os.path.exists(secret_path):
+                with open(secret_path, "r") as f:
+                    self.SECRET_KEY = f.read().strip()
 
 
 config = Config()
