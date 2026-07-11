@@ -77,5 +77,5 @@ async def add_balance(message: Message):
         await message.answer(get_text(lang, "admin_user_not_found"))
         return
 
-    await backend.update_user_balance(user_tg_id, amount)
+    await backend.update_user_balance(user.id, amount)
     await message.answer(get_text(lang, "admin_balance_added", name=user.full_name, amount=amount))

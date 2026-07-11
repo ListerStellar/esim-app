@@ -49,20 +49,20 @@ class BackendClient:
             resp.raise_for_status()
             return make_obj(resp.json())
 
-    async def set_user_language(self, telegram_id: int, language: str):
+    async def set_user_language(self, user_id: int, language: str):
         async with httpx.AsyncClient() as client:
             resp = await client.patch(
-                f"{self.base_url}/api/internal/users/{telegram_id}/language",
+                f"{self.base_url}/api/internal/users/{user_id}/language",
                 json={"language": language},
                 headers=self._headers()
             )
             resp.raise_for_status()
             return make_obj(resp.json())
 
-    async def update_user_balance(self, telegram_id: int, delta: float):
+    async def update_user_balance(self, user_id: int, delta: float):
         async with httpx.AsyncClient() as client:
             resp = await client.patch(
-                f"{self.base_url}/api/internal/users/{telegram_id}/balance",
+                f"{self.base_url}/api/internal/users/{user_id}/balance",
                 json={"delta": delta},
                 headers=self._headers()
             )
@@ -98,21 +98,21 @@ class BackendClient:
 
     # --- ТРАНЗАКЦИОННЫЕ МЕТОДЫ ---
 
-    async def buy_with_balance(self, telegram_id: int, plan_id: str):
+    async def buy_with_balance(self, user_id: int, plan_id: str):
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
                 f"{self.base_url}/api/internal/buy_with_balance",
-                json={"telegram_id": telegram_id, "plan_id": plan_id},
+                json={"user_id": user_id, "plan_id": plan_id},
                 headers=self._headers()
             )
             resp.raise_for_status()
             return make_obj(resp.json())
 
-    async def buy_with_stripe(self, telegram_id: int, plan_id: str):
+    async def buy_with_stripe(self, user_id: int, plan_id: str):
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 f"{self.base_url}/api/internal/buy_with_stripe",
-                json={"telegram_id": telegram_id, "plan_id": plan_id},
+                json={"user_id": user_id, "plan_id": plan_id},
                 headers=self._headers()
             )
             resp.raise_for_status()

@@ -1,0 +1,43 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Navbar } from './components/Navbar';
+import { Landing } from './pages/Landing';
+import { Catalog } from './pages/Catalog';
+import { HowToInstall } from './pages/HowToInstall';
+import { Support } from './pages/Support';
+import { Login } from './pages/Login';
+import { Profile } from './pages/Profile';
+import { PaymentSuccess } from './pages/PaymentSuccess';
+import { useEffect } from 'react';
+import { useAuthStore } from './store/useAuthStore';
+
+function App() {
+  const { fetchUser, isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUser();
+    }
+  }, [isAuthenticated]);
+
+  return (
+    <BrowserRouter>
+      <div className="fixed inset-0 bg-app-bg -z-50 pointer-events-none"></div>
+      <div className="min-h-screen flex flex-col relative z-0">
+        <Navbar />
+        <main className="flex-grow pt-24 md:pt-28">
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/catalog" element={<Catalog />} />
+            <Route path="/how-to-install" element={<HowToInstall />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
+}
+
+export default App;

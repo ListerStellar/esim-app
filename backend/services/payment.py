@@ -14,6 +14,7 @@ async def create_payment_link(
     plan_name: str,
     price_eur: float,
     user_telegram_id: int,
+    redirect_url: str = None,
 ) -> str:
     """
     Создаёт Stripe Checkout ссылку для оплаты.
@@ -34,8 +35,8 @@ async def create_payment_link(
             "order_id": str(order_id),
             "telegram_id": str(user_telegram_id),
         },
-        success_url=f"https://t.me/{config.BOT_USERNAME}?start=paid_{order_id}",
-        cancel_url=f"https://t.me/{config.BOT_USERNAME}?start=cancelled",
+        success_url=f"{redirect_url}?order_id={order_id}" if redirect_url else f"https://t.me/{config.BOT_USERNAME}?start=paid_{order_id}",
+        cancel_url=redirect_url if redirect_url else f"https://t.me/{config.BOT_USERNAME}?start=cancelled",
     )
     return session.url
 

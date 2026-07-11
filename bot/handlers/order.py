@@ -40,7 +40,7 @@ async def pay_with_stripe(callback: CallbackQuery, state: FSMContext, bot: Bot):
     user = await backend.get_user_by_telegram_id(callback.from_user.id)
     lang = user.language if user else "en"
     
-    res = await backend.buy_with_stripe(callback.from_user.id, plan_id)
+    res = await backend.buy_with_stripe(user.id, plan_id)
     if not res.success:
         await callback.answer(get_error_text(lang, res.error), show_alert=True)
         return
@@ -72,7 +72,7 @@ async def pay_with_balance(callback: CallbackQuery, state: FSMContext, bot: Bot)
     
     await callback.message.edit_text(get_text(lang, "payment_processing"), parse_mode="HTML")
     
-    res = await backend.buy_with_balance(callback.from_user.id, plan_id)
+    res = await backend.buy_with_balance(user.id, plan_id)
     if not res.success:
         err_msg = get_error_text(lang, res.error)
         await callback.message.edit_text(f"{get_text(lang, 'payment_error')} {err_msg}")

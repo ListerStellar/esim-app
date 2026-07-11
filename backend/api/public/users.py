@@ -4,6 +4,11 @@ from sqlalchemy.future import select
 
 from database.db import get_session, User, Order
 from auth.security import get_current_user, JWTUser
+from pydantic import BaseModel
+
+class LanguageUpdate(BaseModel):
+    language: str
+
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -37,8 +42,23 @@ async def get_my_profile(jwt_user: JWTUser = Depends(get_current_user), session:
                 "duration_days": o.duration_days,
                 "price_eur": o.price_eur,
                 "status": o.status,
-                "created_at": o.created_at
+                "created_at": o.created_at,
+                "esim_iccid": o.esim_iccid,
+                "esim_activation_code": o.esim_activation_code,
+                "esim_qr_code": o.esim_qr_code,
             }
             for o in orders
         ]
     }
+
+@router.patch("/me/language")
+async def update_language(req: LanguageUpdate, jwt_user: JWTUser = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    user_res = await session.execute(select(User).filter(User.id == jwt_user.id))
+    user = user_res.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.language = req.language
+    await session.commit()
+    return {"status": "ok", "language": user.language}

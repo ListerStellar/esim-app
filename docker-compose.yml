@@ -43,7 +43,7 @@ services:
       - backend
 
   nginx:
-    image: nginx:alpine
+    build: ./frontend
     container_name: esim_nginx
     restart: always
     volumes:

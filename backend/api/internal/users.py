@@ -25,13 +25,13 @@ async def api_get_user(telegram_id: int):
         raise HTTPException(404, "User not found")
     return user
 
-@router.patch("/{telegram_id}/balance")
-async def api_update_balance(telegram_id: int, delta: float = Body(..., embed=True)):
-    return await update_user_balance(telegram_id, delta)
+@router.patch("/{user_id}/balance")
+async def api_update_balance(user_id: int, delta: float = Body(..., embed=True)):
+    return await update_user_balance(user_id, delta)
 
-@router.patch("/{telegram_id}/language")
-async def api_set_language(telegram_id: int, language: str = Body(..., embed=True)):
-    return await set_user_language(telegram_id, language)
+@router.patch("/{user_id}/language")
+async def api_set_language(user_id: int, language: str = Body(..., embed=True)):
+    return await set_user_language(user_id, language)
 
 @router.get("/{user_id}/orders")
 async def api_get_user_orders(user_id: int):

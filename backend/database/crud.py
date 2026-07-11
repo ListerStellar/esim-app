@@ -55,18 +55,24 @@ async def get_user_by_telegram_id(telegram_id: int) -> Optional[User]:
         return result.scalar_one_or_none()
 
 
-async def update_user_balance(telegram_id: int, delta: float):
+async def get_user_by_id(user_id: int) -> Optional[User]:
     async with AsyncSessionLocal() as session:
-        result = await session.execute(select(User).where(User.telegram_id == telegram_id))
+        result = await session.execute(select(User).where(User.id == user_id))
+        return result.scalar_one_or_none()
+
+
+async def update_user_balance(user_id: int, delta: float):
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if user:
             user.balance = round(user.balance + delta, 2)
             await session.commit()
 
 
-async def set_user_language(telegram_id: int, lang: str):
+async def set_user_language(user_id: int, lang: str):
     async with AsyncSessionLocal() as session:
-        result = await session.execute(select(User).where(User.telegram_id == telegram_id))
+        result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if user:
             user.language = lang

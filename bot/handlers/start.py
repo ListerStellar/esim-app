@@ -53,7 +53,9 @@ async def cmd_start(message: Message, state: FSMContext):
 @router.callback_query(F.data.startswith("lang:"))
 async def set_language(callback: CallbackQuery):
     lang = callback.data.split(":")[1]
-    await backend.set_user_language(callback.from_user.id, lang)
+    user = await backend.get_user_by_telegram_id(callback.from_user.id)
+    if user:
+        await backend.set_user_language(user.id, lang)
 
     text = get_text(lang, "main_menu")
     await callback.message.edit_text(text, parse_mode="HTML")

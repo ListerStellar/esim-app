@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-router = APIRouter(prefix="/api/internal/catalog", tags=["catalog"])
+router = APIRouter(prefix="/catalog", tags=["catalog"])
 
 @router.get("/countries")
 async def api_get_countries():

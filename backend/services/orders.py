@@ -1,7 +1,7 @@
 import logging
 from config import config
 from database.crud import (
-    get_user_by_telegram_id, create_order, set_order_paid,
+    get_user_by_telegram_id, get_user_by_id, create_order, set_order_paid,
     set_order_activated, update_user_balance, create_referral_bonus,
     get_order_by_id
 )
@@ -41,7 +41,7 @@ async def process_payment(order_id: int):
                 referrer = res_ref.scalar_one_or_none()
                 if referrer:
                     bonus = config.REFERRAL_BONUS_EUR
-                    await update_user_balance(referrer.telegram_id, bonus)
+                    await update_user_balance(referrer.id, bonus)
                     await create_referral_bonus(referrer.id, user_model.id, bonus)
         
         return await get_order_by_id(order_id)
@@ -49,12 +49,12 @@ async def process_payment(order_id: int):
         logger.error(f"Failed to process payment for order {order_id}: {e}")
         return None
 
-async def buy_with_balance_service(telegram_id: int, plan_id: str) -> dict:
+async def buy_with_balance_service(user_id: int, plan_id: str) -> dict:
     plan = get_plan_by_id(plan_id)
     if not plan:
         return {"success": False, "error": "plan_not_found"}
 
-    user = await get_user_by_telegram_id(telegram_id)
+    user = await get_user_by_id(user_id)
     if not user:
         return {"success": False, "error": "user_not_found"}
 
@@ -62,7 +62,7 @@ async def buy_with_balance_service(telegram_id: int, plan_id: str) -> dict:
         return {"success": False, "error": f"insufficient_funds|{user.balance}|{plan.price_eur}"}
 
     # Списываем баланс и создаем заказ
-    await update_user_balance(telegram_id, -plan.price_eur)
+    await update_user_balance(user.id, -plan.price_eur)
     order = await create_order(
         user_id=user.id,
         plan_id=plan.plan_id,
@@ -91,12 +91,12 @@ async def buy_with_balance_service(telegram_id: int, plan_id: str) -> dict:
         "qr_code_base64": activated_order.esim_qr_code,
     }
 
-async def buy_with_stripe_service(telegram_id: int, plan_id: str) -> dict:
+async def buy_with_stripe_service(user_id: int, plan_id: str, redirect_url: str = None) -> dict:
     plan = get_plan_by_id(plan_id)
     if not plan:
         return {"success": False, "error": "plan_not_found"}
 
-    user = await get_user_by_telegram_id(telegram_id)
+    user = await get_user_by_id(user_id)
     if not user:
         return {"success": False, "error": "user_not_found"}
 
@@ -135,7 +135,8 @@ async def buy_with_stripe_service(telegram_id: int, plan_id: str) -> dict:
             order_id=order.id,
             plan_name=f"{plan.country_name} {plan.data_gb}ГБ/{plan.duration_days}дн",
             price_eur=plan.price_eur,
-            user_telegram_id=telegram_id,
+            user_telegram_id=user.telegram_id,  # stripe metadata
+            redirect_url=redirect_url,
         )
         return {"success": True, "mock": False, "payment_url": payment_url, "order_id": order.id, "price_eur": plan.price_eur}
     except Exception as e:
