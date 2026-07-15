@@ -3,6 +3,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+ARG VITE_TELEGRAM_BOT_NAME
+ENV VITE_TELEGRAM_BOT_NAME=$VITE_TELEGRAM_BOT_NAME
 RUN npm run build
 
 FROM nginx:alpine

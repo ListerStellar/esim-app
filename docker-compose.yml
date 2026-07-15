@@ -43,7 +43,10 @@ services:
       - backend
 
   nginx:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_TELEGRAM_BOT_NAME: ${VITE_TELEGRAM_BOT_NAME}
     container_name: esim_nginx
     restart: always
     volumes:
