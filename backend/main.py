@@ -8,6 +8,13 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="eSIM Store API", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from rate_limit import limiter
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,

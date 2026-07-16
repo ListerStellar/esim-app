@@ -19,6 +19,7 @@ from config import config
 from authlib.integrations.starlette_client import OAuth
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
+from rate_limit import limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -88,7 +89,8 @@ async def create_tokens_for_user(user: User, session: AsyncSession) -> TokenResp
     return TokenResponse(access_token=access_token, refresh_token=plain_refresh_token)
 
 @router.post("/register", response_model=TokenResponse)
-async def register(req: RegisterRequest, session: AsyncSession = Depends(get_session)):
+@limiter.limit("10/minute")
+async def register(request: Request, req: RegisterRequest, session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(User).filter(User.email == req.email))
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -114,18 +116,31 @@ async def register(req: RegisterRequest, session: AsyncSession = Depends(get_ses
 
 
 @router.post("/token", response_model=TokenResponse)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_session)):
+@limiter.limit("10/minute")
+async def login_for_access_token(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(User).filter(User.email == form_data.username))
     user = result.scalars().first()
     
     if not user or not user.hashed_password:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
         
-    if not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
-        
     if user.is_banned:
         raise HTTPException(status_code=403, detail="User is banned")
+        
+    if user.locked_until and user.locked_until > datetime.now(timezone.utc):
+        raise HTTPException(status_code=403, detail="Account temporarily locked. Please try again later.")
+        
+    if not verify_password(form_data.password, user.hashed_password):
+        user.failed_login_attempts += 1
+        if user.failed_login_attempts >= 10:
+            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=10)
+        await session.commit()
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+        
+    # Successful login, reset counters
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    await session.commit()
         
     return await create_tokens_for_user(user, session)
 

@@ -92,7 +92,15 @@ export const Login = () => {
         navigate('/profile');
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Authentication failed');
+      if (err.response?.status === 429) {
+        setError('Too many attempts. Please try again later.');
+        return;
+      }
+      let detail = err.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        detail = detail[0].msg;
+      }
+      setError(detail || err.message || 'Authentication failed');
     }
   };
 
@@ -106,7 +114,15 @@ export const Login = () => {
       login(res.data.access_token);
       navigate('/profile');
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Telegram auth failed');
+      if (err.response?.status === 429) {
+        setError('Too many attempts. Please try again later.');
+        return;
+      }
+      let detail = err.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        detail = detail[0].msg;
+      }
+      setError(detail || err.message || 'Telegram auth failed');
     }
   };
 

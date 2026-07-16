@@ -30,6 +30,8 @@ class User(Base):
     referral_code: Mapped[str] = mapped_column(String(16), unique=True)
     referred_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     orders: Mapped[List["Order"]] = relationship("Order", back_populates="user")
