@@ -9,6 +9,7 @@ import { Profile } from './pages/Profile';
 import { PaymentSuccess } from './pages/PaymentSuccess';
 import { useEffect } from 'react';
 import { useAuthStore } from './store/useAuthStore';
+import { SwipeableRoutes } from './components/SwipeableRoutes';
 
 function App() {
   const { fetchUser, isAuthenticated } = useAuthStore();
@@ -24,16 +25,18 @@ function App() {
       <div className="fixed inset-0 bg-app-bg -z-50 pointer-events-none"></div>
       <div className="min-h-screen flex flex-col relative z-0">
         <Navbar />
-        <main className="flex-grow pt-24 md:pt-28">
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/catalog" element={<Catalog />} />
-            <Route path="/how-to-install" element={<HowToInstall />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/payment-success" element={<PaymentSuccess />} />
-          </Routes>
+        <main className="flex-grow pt-12 pb-24 md:pt-28 md:pb-8 flex flex-col">
+          <SwipeableRoutes>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/catalog" element={<Catalog />} />
+              <Route path="/how-to-install" element={<HowToInstall />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+            </Routes>
+          </SwipeableRoutes>
         </main>
       </div>
     </BrowserRouter>

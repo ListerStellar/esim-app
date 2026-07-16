@@ -8,7 +8,7 @@ export const Landing = () => {
   return (
     <div className="relative min-h-[calc(100vh-64px)] flex flex-col justify-center items-center px-6 pb-24 text-center">
       {/* Background Image with Overlay */}
-      <div className="absolute inset-0 w-full h-full -top-24 md:-top-28 -z-10 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 w-full h-full -top-12 md:-top-28 -z-10 overflow-hidden pointer-events-none">
         <img 
           src="/hero.png" 
           alt="Abstract Globe and SIM" 
