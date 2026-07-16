@@ -1,141 +1,137 @@
-# eSIM Store Bot 🌍
+# ADVANCE eSIM 🌍
 
-Telegram-бот для продажи eSIM. Работает с Airalo, eSIM Go или в тестовом режиме.
+A complete platform for selling eSIMs, accessible via both a Web Application and a Telegram Bot. The platform supports Stripe payments, multi-language Telegram interface, internal balance, and instant eSIM QR code delivery.
 
-## Что умеет бот
+## 🌟 Features
 
-- 🌍 Каталог тарифов по странам (Чехия, Европа, Германия, США и др.)
-- 💳 Оплата через Stripe (карта) или с внутреннего баланса
-- 📱 Мгновенная доставка QR-кода eSIM прямо в чат
-- 👤 Личный кабинет: баланс, история заказов
-- 🎁 Реферальная программа (+2€ за каждого друга)
-- 🌐 Мультиязычный: RU / CS / EN / UK
-- 🔧 Админ-панель: статистика, начисление баланса
+- **Full-Stack Ecosystem**: Unified backend serving both the React frontend and the Telegram Bot.
+- **Web App**: Responsive and beautifully designed frontend using React, TailwindCSS, and Zustand.
+- **Telegram Bot**: Fully integrated bot for browsing the catalog, buying eSIMs, and managing profiles.
+- **Payments**: Supports direct card payments via Stripe and internal account balance.
+- **Instant Delivery**: Generates and delivers eSIM QR codes instantly via the UI or chat.
+- **OAuth Integration**: Apple, Google, and native Telegram Login widget on the web app.
+- **Dockerized**: Containerized microservices architecture with `docker-compose`.
 
----
+## 🛠 Tech Stack
 
-## Быстрый старт
+### Frontend (`/frontend`)
+- **Framework**: React 19 + Vite
+- **Styling**: TailwindCSS 3 + Glassmorphism aesthetic
+- **State Management**: Zustand
+- **Validation**: Zod
+- **Networking**: Axios
 
-### 1. Установка зависимостей
+### Backend (`/backend`)
+- **Framework**: FastAPI (Python 3.11)
+- **Database**: PostgreSQL 15 + SQLAlchemy 2.0 (asyncpg)
+- **Authentication**: JWT (PyJWT), bcrypt
+- **Payments**: Stripe SDK
+- **Image Generation**: qrcode + Pillow (for QR generation)
 
-```bash
-pip install -r requirements.txt
+### Telegram Bot (`/bot`)
+- **Framework**: aiogram 3.x
+- **Networking**: aiohttp / httpx
+- **Features**: Async handlers, Webhooks/Polling, multi-language catalog.
+
+### Infrastructure (`/nginx`, `docker-compose.yml`)
+- **Reverse Proxy**: NGINX (serving compiled Vite static files and proxying API)
+- **Orchestration**: Docker Compose
+- **Tunneling**: Ngrok (for testing Telegram webhooks locally)
+
+## 📁 Project Structure
+
+```
+esim-app/
+├── backend/            # FastAPI backend, auth, database models, Stripe, eSIM services
+├── bot/                # Telegram bot (aiogram), UI keyboards, handlers
+├── frontend/           # React Web Application
+├── nginx/              # Nginx configurations for routing
+├── docker-compose.yml  # Orchestrates DB, Backend, Bot, Nginx, Ngrok
+├── .env.example        # Environment variables template
+└── README.md           # This file
 ```
 
-### 2. Настройка окружения
+## 🚀 Quick Start
 
+### 1. Prerequisites
+- [Docker](https://www.docker.com/) and Docker Compose
+- [Node.js](https://nodejs.org/) (for local frontend development)
+- [Python 3.11+](https://www.python.org/) (for local backend/bot development)
+- Ngrok account (for local Telegram bot testing)
+
+### 2. Environment Setup
+
+Copy the example environment file:
 ```bash
 cp .env.example .env
-# Открой .env и заполни переменные
 ```
 
-**Обязательно:**
-- `BOT_TOKEN` — получи у [@BotFather](https://t.me/BotFather)
-- `ADMIN_IDS` — свой Telegram ID (узнай у [@userinfobot](https://t.me/userinfobot))
+Open `.env` and fill in the critical variables:
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (Database credentials)
+- `JWT_SECRET` (For Web App authentication)
+- `BOT_TOKEN` (From [@BotFather](https://t.me/BotFather))
+- `VITE_TELEGRAM_BOT_NAME` (For the Telegram Login widget on the frontend)
+- `STRIPE_SECRET_KEY` (For payments)
+- `NGROK_AUTHTOKEN` & `NGROK_DOMAIN` (For local testing)
 
-**Опционально для полноценной работы:**
-- `STRIPE_SECRET_KEY` — из [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
-- `ESIM_PROVIDER` + `ESIM_API_KEY` — от выбранного поставщика
+### 3. Running with Docker Compose
 
-### 3. Запуск
+To start the entire stack (Database, Backend, Bot, Frontend/Nginx, Ngrok):
 
 ```bash
+docker-compose up -d --build
+```
+
+- **Frontend Web App**: `https://<your-ngrok-domain>` (MUST be accessed via Ngrok; otherwise, the Telegram Login Widget will throw a `Bot domain invalid` error and webhooks won't work!)
+- **Backend API Docs**: `https://<your-ngrok-domain>/api/docs`
+- **Telegram Bot**: Automatically sets a webhook on your Ngrok domain to receive updates.
+
+> [!IMPORTANT]
+> **Telegram Login Widget Configuration**: You MUST configure your Ngrok domain with Telegram to allow the login widget to function.
+> Send the `/setdomain` command to [@BotFather](https://t.me/BotFather), select your bot, and enter your Ngrok domain (e.g., `https://your-domain.ngrok-free.app`).
+
+### 4. Local Development
+
+**Frontend**:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+**Backend**:
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+**Bot**:
+```bash
+cd bot
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 python bot.py
 ```
 
-Бот запустится в тестовом режиме (`ESIM_PROVIDER=mock`) — можно тестировать весь флоу без реальных API.
+## 💳 Provider Integration (Airalo / eSIM Go)
 
----
+Currently, the system is configured to use a mock provider by default (`ESIM_PROVIDER=mock`). 
+To connect a real provider, update your `.env`:
 
-## Подключение eSIM поставщика
-
-### Airalo Partners
-1. Зарегистрируйся на [partners.airalo.com](https://partners.airalo.com)
-2. Получи API ключ
-3. В `.env` установи:
-   ```
-   ESIM_PROVIDER=airalo
-   ESIM_API_KEY=your_key
-   ESIM_API_URL=https://sandbox-partners-api.airalo.com
-   ```
-4. После тестирования смени URL на `https://partners-api.airalo.com`
-
-### eSIM Go
-1. Зарегистрируйся на [esim-go.com](https://www.esim-go.com)
-2. В `.env` установи:
-   ```
-   ESIM_PROVIDER=esimgo
-   ESIM_API_KEY=your_key
-   ESIM_API_URL=https://api.esim-go.com
-   ```
-
----
-
-## Структура проекта
-
-```
-esim_bot/
-├── bot.py                  # Точка входа
-├── config.py               # Конфигурация из .env
-├── requirements.txt
-├── .env.example
-├── database/
-│   ├── db.py               # SQLAlchemy модели
-│   └── crud.py             # Операции с БД
-├── handlers/
-│   ├── start.py            # /start, выбор языка
-│   ├── catalog.py          # Страны и тарифы
-│   ├── order.py            # Оплата и доставка eSIM
-│   ├── profile.py          # Профиль, заказы, инструкция
-│   ├── referral.py         # Реферальная программа
-│   └── admin.py            # Админ-команды
-├── keyboards/
-│   └── kb.py               # Все клавиатуры
-└── services/
-    ├── esim_provider.py    # Логика активации eSIM
-    └── payment.py          # Stripe интеграция
+**Airalo Partners**
+```env
+ESIM_PROVIDER=airalo
+ESIM_API_KEY=your_key
+ESIM_API_URL=https://sandbox-partners-api.airalo.com
 ```
 
----
-
-## Деплой на сервер
-
-### Бесплатные варианты для старта:
-- **Railway** — [railway.app](https://railway.app) — $5/мес или бесплатный tier
-- **Render** — [render.com](https://render.com) — есть бесплатный план
-- **VPS** — любой (DigitalOcean, Hetzner от €4/мес)
-
-### Запуск через systemd (VPS):
-
-```ini
-[Unit]
-Description=eSIM Telegram Bot
-After=network.target
-
-[Service]
-WorkingDirectory=/path/to/esim_bot
-ExecStart=/usr/bin/python3 bot.py
-Restart=always
-EnvironmentFile=/path/to/esim_bot/.env
-
-[Install]
-WantedBy=multi-user.target
+**eSIM Go**
+```env
+ESIM_PROVIDER=esimgo
+ESIM_API_KEY=your_key
+ESIM_API_URL=https://api.esim-go.com
 ```
-
----
-
-## Добавить новые страны/тарифы
-
-В файле `services/esim_provider.py` найди список `PLANS` и добавь новые тарифы:
-
-```python
-ESIMPlan("hu_3gb_14d", "HU", "Венгрия 🇭🇺", "🇭🇺", 3, 14, 4.9, "3 ГБ / 14 дней"),
-```
-
----
-
-## Webhook для Stripe (production)
-
-Для автоматического подтверждения оплаты нужен HTTP-сервер (FastAPI/aiohttp).
-Webhook обрабатывает событие `checkout.session.completed` и вызывает `deliver_esim()`.
-Это следующий шаг после базового MVP.
