@@ -4,6 +4,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import { X, CreditCard, Wallet } from 'lucide-react';
 import { QRCodeModal } from '../components/QRCodeModal';
+import { useAppStore } from '../store/useAppStore';
+import { t } from '../locales';
 
 interface Plan {
   plan_id: string;
@@ -27,6 +29,7 @@ export const Catalog = () => {
   // QR Modal state
   const [qrData, setQrData] = useState<any>(null);
 
+  const { language } = useAppStore();
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -75,7 +78,7 @@ export const Catalog = () => {
       // Show QR Modal
       setQrData(res.data);
     } catch (e: any) {
-      alert('Payment failed: ' + (e.response?.data?.detail || e.message));
+      alert(t(language, 'catalog_payment_failed') + ' ' + (e.response?.data?.detail || e.message));
     } finally {
       setIsProcessing(false);
     }
@@ -100,7 +103,7 @@ export const Catalog = () => {
         setQrData(res.data);
       }
     } catch (e: any) {
-      alert('Payment failed: ' + (e.response?.data?.detail || e.message));
+      alert(t(language, 'catalog_payment_failed') + ' ' + (e.response?.data?.detail || e.message));
     } finally {
       setIsProcessing(false);
     }
@@ -109,7 +112,7 @@ export const Catalog = () => {
   return (
     <div className="pb-24 pt-6 px-4 max-w-4xl mx-auto min-h-[calc(100vh-64px)] relative">
       <h2 className="text-3xl font-extrabold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-indigo-100">
-        Choose your destination
+        {t(language, 'catalog_choose_country')}
       </h2>
       
       {!selectedCountry ? (
@@ -131,20 +134,20 @@ export const Catalog = () => {
             onClick={() => setSelectedCountry(null)}
             className="mb-6 text-blue-300 hover:text-blue-100 flex items-center gap-2"
           >
-            ← Back to countries
+            ← {t(language, 'catalog_back')}
           </button>
-          <h3 className="text-2xl font-bold mb-6">{names[selectedCountry]} Plans</h3>
+          <h3 className="text-2xl font-bold mb-6">{t(language, 'catalog_plans_for')} {names[selectedCountry]}</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             {plans.map(p => (
               <div key={p.plan_id} className="glass-panel p-6 flex flex-col justify-between">
                 <div>
-                  <div className="text-3xl font-black mb-1">{p.data_gb} GB</div>
-                  <div className="text-slate-300 mb-4">{p.duration_days} Days</div>
+                  <div className="text-3xl font-black mb-1">{p.data_gb} {t(language, 'catalog_gb')}</div>
+                  <div className="text-slate-300 mb-4">{p.duration_days} {t(language, 'catalog_days')}</div>
                 </div>
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-xl font-bold text-blue-200">€{p.price_eur}</div>
                   <button onClick={() => initiatePayment(p)} className="glass-button px-6 py-2">
-                    Buy
+                    {t(language, 'catalog_buy')}
                   </button>
                 </div>
               </div>
@@ -164,9 +167,9 @@ export const Catalog = () => {
             >
               <X size={24} />
             </button>
-            <h3 className="text-2xl font-bold mb-2">Select Payment Method</h3>
+            <h3 className="text-2xl font-bold mb-2">{t(language, 'catalog_select_payment')}</h3>
             <p className="text-slate-400 mb-6">
-              You are about to buy {paymentPlan.country_name} {paymentPlan.data_gb}GB for €{paymentPlan.price_eur}.
+              {t(language, 'catalog_you_are_buying', { country: paymentPlan.country_name, gb: paymentPlan.data_gb, price: paymentPlan.price_eur })}
             </p>
             
             <div className="space-y-3">
@@ -180,12 +183,12 @@ export const Catalog = () => {
                     <Wallet size={20} />
                   </div>
                   <div className="text-left">
-                    <div className="font-bold">Pay with Balance</div>
-                    <div className="text-sm text-slate-400">Available: €{(user?.balance || 0).toFixed(2)}</div>
+                    <div className="font-bold">{t(language, 'catalog_pay_balance')}</div>
+                    <div className="text-sm text-slate-400">{t(language, 'catalog_available')} €{(user?.balance || 0).toFixed(2)}</div>
                   </div>
                 </div>
                 {(user?.balance || 0) < paymentPlan.price_eur && (
-                  <span className="text-xs text-red-400 font-medium">Insufficient</span>
+                  <span className="text-xs text-red-400 font-medium">{t(language, 'catalog_insufficient')}</span>
                 )}
               </button>
               
@@ -197,7 +200,7 @@ export const Catalog = () => {
                 <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                   <CreditCard size={20} />
                 </div>
-                <div className="text-left font-bold">Pay with Credit Card</div>
+                <div className="text-left font-bold">{t(language, 'catalog_pay_card')}</div>
               </button>
             </div>
           </div>

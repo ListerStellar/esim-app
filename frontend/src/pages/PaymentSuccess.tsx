@@ -4,8 +4,11 @@ import { api } from '../api/api';
 import { QRCodeModal } from '../components/QRCodeModal';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
+import { t } from '../locales';
 
 export const PaymentSuccess = () => {
+  const { language } = useAppStore();
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('order_id');
   const navigate = useNavigate();
@@ -64,9 +67,9 @@ export const PaymentSuccess = () => {
         {status === 'checking' && (
           <>
             <Loader2 size={64} className="text-blue-400 animate-spin mb-6" />
-            <h2 className="text-2xl font-bold mb-2">Confirming Payment...</h2>
+            <h2 className="text-2xl font-bold mb-2">{t(language, 'payment_checking')}</h2>
             <p className="text-slate-400">
-              Please wait while we verify your transaction and generate your eSIM. This usually takes a few seconds.
+              {t(language, 'payment_checking_desc')}
             </p>
           </>
         )}
@@ -74,22 +77,22 @@ export const PaymentSuccess = () => {
         {status === 'success' && (
           <>
             <CheckCircle2 size={64} className="text-green-400 mb-6" />
-            <h2 className="text-2xl font-bold mb-2">Payment Successful!</h2>
+            <h2 className="text-2xl font-bold mb-2">{t(language, 'payment_success_title')}</h2>
             <p className="text-slate-400 mb-6">
-              Your eSIM is ready to install.
+              {t(language, 'payment_success_subtitle')}
             </p>
             <div className="flex gap-4 w-full">
               <button 
                 onClick={() => setQrData({...qrData, isOpen: true})}
                 className="glass-button w-full py-3"
               >
-                View QR Code
+                {t(language, 'profile_view_qr')}
               </button>
               <button 
                 onClick={() => navigate('/profile')}
                 className="glass-button-secondary w-full py-3"
               >
-                My Profile
+                {t(language, 'payment_success_btn')}
               </button>
             </div>
           </>
@@ -98,7 +101,7 @@ export const PaymentSuccess = () => {
         {status === 'error' && (
           <>
             <XCircle size={64} className="text-red-400 mb-6" />
-            <h2 className="text-2xl font-bold mb-2">Something went wrong</h2>
+            <h2 className="text-2xl font-bold mb-2">{t(language, 'payment_error_title')}</h2>
             <p className="text-slate-400 mb-6">
               {errorMsg}
             </p>
@@ -106,7 +109,7 @@ export const PaymentSuccess = () => {
               onClick={() => navigate('/profile')}
               className="glass-button-secondary w-full py-3"
             >
-              Go to Profile
+              {t(language, 'payment_go_profile')}
             </button>
           </>
         )}

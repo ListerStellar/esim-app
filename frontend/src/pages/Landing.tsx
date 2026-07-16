@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom';
+import { useAppStore } from '../store/useAppStore';
+import { t } from '../locales';
 
 export const Landing = () => {
+  const { language } = useAppStore();
+  
   return (
     <div className="relative min-h-[calc(100vh-64px)] flex flex-col justify-center items-center px-6 pb-24 text-center">
       {/* Background Image with Overlay */}
@@ -18,31 +22,30 @@ export const Landing = () => {
         </h1>
         
         <p className="text-xl md:text-2xl text-blue-100/90 font-light max-w-2xl mx-auto">
-          Instant mobile internet in over 50+ countries. 
-          Connect globally without roaming charges.
+          {t(language, 'landing_hero_subtitle')}
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
           <Link to="/catalog" className="glass-button px-10 py-4 text-lg font-bold w-full sm:w-auto">
-            View eSIM Plans
+            {t(language, 'landing_get_esim')}
           </Link>
           <Link to="/how-to-install" className="glass-button-secondary px-8 py-4 text-lg font-medium w-full sm:w-auto">
-            How it works
+            {t(language, 'profile_how_to_install')}
           </Link>
         </div>
 
         <div className="grid grid-cols-3 gap-6 pt-16">
           <div>
             <div className="text-4xl font-black text-blue-400 mb-2">50+</div>
-            <div className="text-sm text-slate-300 uppercase tracking-wider">Countries</div>
+            <div className="text-sm text-slate-300 uppercase tracking-wider">{t(language, 'landing_countries')}</div>
           </div>
           <div>
             <div className="text-4xl font-black text-blue-400 mb-2">⚡️</div>
-            <div className="text-sm text-slate-300 uppercase tracking-wider">Instant Setup</div>
+            <div className="text-sm text-slate-300 uppercase tracking-wider">{t(language, 'landing_instant')}</div>
           </div>
           <div>
-            <div className="text-4xl font-black text-blue-400 mb-2">3x</div>
-            <div className="text-sm text-slate-300 uppercase tracking-wider">Cheaper</div>
+            <div className="text-4xl font-black text-blue-400 mb-2">№1</div>
+            <div className="text-sm text-slate-300 uppercase tracking-wider">{t(language, 'landing_cheaper')}</div>
           </div>
         </div>
       </div>
