@@ -12,3 +12,6 @@ export const setAuthToken = (token: string | null) => {
     delete api.defaults.headers.common['Authorization'];
   }
 };
+
+// Initialize token on load
+setAuthToken(localStorage.getItem('token'));

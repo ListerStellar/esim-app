@@ -25,10 +25,12 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None))
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
-        order_id_str = session.get("metadata", {}).get("order_id")
+        metadata = getattr(session, "metadata", None)
+        order_id_str = getattr(metadata, "order_id", None) if metadata else None
+        
         if order_id_str:
             order_id = int(order_id_str)
-            payment_id = session.get("payment_intent")
+            payment_id = getattr(session, "payment_intent", None)
             await set_order_paid(order_id, payment_id)
             await process_payment(order_id)
 

@@ -1,6 +1,30 @@
 # ADVANCE eSIM 🌍
 
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![aiogram](https://img.shields.io/badge/Telegram_Bot-aiogram-blue?style=for-the-badge&logo=telegram)
+
 A complete platform for selling eSIMs, accessible via both a Web Application and a Telegram Bot. The platform supports Stripe payments, multi-language Telegram interface, internal balance, and instant eSIM QR code delivery.
+
+## 📸 Screenshots
+
+<details>
+<summary><b>Click to expand screenshots</b></summary>
+<br>
+
+<div align="center">
+  <img src="screenshots/telegram-cloud-photo-size-2-5442686985786039332-y.jpg" width="30%" />
+  <img src="screenshots/telegram-cloud-photo-size-2-5442686985786039333-y.jpg" width="30%" />
+  <img src="screenshots/telegram-cloud-photo-size-2-5442686985786039336-y.jpg" width="30%" />
+  <br>
+  <img src="screenshots/telegram-cloud-photo-size-2-5442686985786039342-y.jpg" width="30%" />
+  <img src="screenshots/telegram-cloud-photo-size-2-5442686985786039344-y.jpg" width="30%" />
+  <img src="screenshots/telegram-cloud-photo-size-2-5442686985786039349-y.jpg" width="30%" />
+</div>
+
+</details>
 
 ## 🌟 Features
 
@@ -9,6 +33,7 @@ A complete platform for selling eSIMs, accessible via both a Web Application and
 - **Telegram Bot**: Fully integrated bot for browsing the catalog, buying eSIMs, and managing profiles.
 - **Payments**: Supports direct card payments via Stripe and internal account balance.
 - **Instant Delivery**: Generates and delivers eSIM QR codes instantly via the UI or chat.
+- **Localization**: Built-in translation mappings for global ISO-3 to ISO-2 countries.
 - **OAuth Integration**: Apple, Google, and native Telegram Login widget on the web app.
 - **Dockerized**: Containerized microservices architecture with `docker-compose`.
 
@@ -117,10 +142,24 @@ pip install -r requirements.txt
 python bot.py
 ```
 
-## 💳 Provider Integration (Airalo / eSIM Go)
+## 💳 Provider Integration
 
 Currently, the system is configured to use a mock provider by default (`ESIM_PROVIDER=mock`). 
 To connect a real provider, update your `.env`:
+
+**eSIM Access (Redtea Mobile)**
+```env
+ESIM_PROVIDER=esimaccess
+ESIMACCESS_ACCESS_CODE=your_access_code
+ESIMACCESS_SECRET_KEY=your_secret_key
+```
+
+**Celitech**
+```env
+ESIM_PROVIDER=celitech
+CELITECH_CLIENT_ID=your_client_id
+CELITECH_CLIENT_SECRET=your_client_secret
+```
 
 **Airalo Partners**
 ```env

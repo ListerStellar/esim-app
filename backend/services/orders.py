@@ -9,6 +9,7 @@ from database.db import AsyncSessionLocal, User
 from sqlalchemy import select
 from services.esim_provider import get_plan_by_id, activate_esim
 from services.payment import create_payment_link
+from services.email import send_receipt_email
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ async def process_payment(order_id: int):
     if not order or order.status != "paid":
         return None
 
-    plan = get_plan_by_id(order.plan_id)
+    plan = await get_plan_by_id(order.plan_id)
     if not plan:
         return None
 
@@ -43,6 +44,18 @@ async def process_payment(order_id: int):
                     bonus = config.REFERRAL_BONUS_EUR
                     await update_user_balance(referrer.id, bonus)
                     await create_referral_bonus(referrer.id, user_model.id, bonus)
+                    
+            # 3. Send email receipt
+            if user_model and user_model.email:
+                order_details = {
+                    "country_name": order.country_name,
+                    "data_gb": order.data_gb,
+                    "duration_days": order.duration_days,
+                    "esim_iccid": activation.iccid,
+                    "esim_activation_code": activation.activation_code,
+                    "esim_qr_code": activation.qr_code_base64,
+                }
+                await send_receipt_email(user_model.email, order_details)
         
         return await get_order_by_id(order_id)
     except Exception as e:
@@ -50,7 +63,7 @@ async def process_payment(order_id: int):
         return None
 
 async def buy_with_balance_service(user_id: int, plan_id: str) -> dict:
-    plan = get_plan_by_id(plan_id)
+    plan = await get_plan_by_id(plan_id)
     if not plan:
         return {"success": False, "error": "plan_not_found"}
 
@@ -92,7 +105,7 @@ async def buy_with_balance_service(user_id: int, plan_id: str) -> dict:
     }
 
 async def buy_with_stripe_service(user_id: int, plan_id: str, redirect_url: str = None) -> dict:
-    plan = get_plan_by_id(plan_id)
+    plan = await get_plan_by_id(plan_id)
     if not plan:
         return {"success": False, "error": "plan_not_found"}
 
@@ -151,8 +164,17 @@ async def check_payment_service(order_id: int) -> dict:
         return {"success": False, "error": "order_not_found"}
     
     if order.status == "activated":
-        return {"success": False, "error": "esim_already_activated"}
-        
+        return {
+            "success": True,
+            "status": "activated",
+            "order_id": order.id,
+            "country_name": order.country_name,
+            "data_gb": order.data_gb,
+            "duration_days": order.duration_days,
+            "iccid": order.esim_iccid,
+            "activation_code": order.esim_activation_code,
+            "qr_code_base64": order.esim_qr_code,
+        }
     if order.status == "paid":
         activated_order = await process_payment(order_id)
         if not activated_order:

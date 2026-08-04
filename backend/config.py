@@ -11,20 +11,21 @@ class Config:
     ADMIN_IDS: list = None
     STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY", "")
     STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
     # OAuth
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
-    APPLE_CLIENT_ID: str = os.getenv("APPLE_CLIENT_ID", "")
-    APPLE_TEAM_ID: str = os.getenv("APPLE_TEAM_ID", "")
-    APPLE_KEY_ID: str = os.getenv("APPLE_KEY_ID", "")
-    APPLE_PRIVATE_KEY: str = os.getenv("APPLE_PRIVATE_KEY", "").replace('\\n', '\n')
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-super-secret-session-key")
 
-    # eSIM Provider API (подключить позже — Airalo / eSIM Go)
-    ESIM_PROVIDER: str = os.getenv("ESIM_PROVIDER", "mock")  # "mock" | "airalo" | "esimgo"
+    # eSIM Provider API
+    ESIM_PROVIDER: str = os.getenv("ESIM_PROVIDER", "mock")  # "mock" | "airalo" | "esimgo" | "celitech"
     ESIM_API_KEY: str = os.getenv("ESIM_API_KEY", "")
     ESIM_API_URL: str = os.getenv("ESIM_API_URL", "")
+    CELITECH_CLIENT_ID: str = os.getenv("CELITECH_CLIENT_ID", "")
+    CELITECH_CLIENT_SECRET: str = os.getenv("CELITECH_CLIENT_SECRET", "")
+    ESIMACCESS_ACCESS_CODE: str = os.getenv("ESIMACCESS_ACCESS_CODE", "")
+    ESIMACCESS_SECRET_KEY: str = os.getenv("ESIMACCESS_SECRET_KEY", "")
 
     # Referral settings
     REFERRAL_BONUS_EUR: float = float(os.getenv("REFERRAL_BONUS_EUR", "2.0"))

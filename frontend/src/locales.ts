@@ -28,6 +28,7 @@ export const translations = {
     login_continue_google: 'Continue with Google',
     login_continue_apple: 'Continue with Apple',
     login_or_email: 'Or continue with email',
+    login_or_social: 'Or continue with',
 
     // Catalog
     catalog_choose_country: 'Choose a Country',
@@ -69,6 +70,15 @@ export const translations = {
     profile_title: 'My Profile',
     profile_my_esims: 'My eSIMs',
     profile_view_qr: 'View QR Code',
+    profile_link_email: 'Link Email',
+    profile_link_telegram: 'Link Telegram',
+    profile_link_email_desc: 'Link Email Address',
+    profile_link: 'Link',
+    profile_cancel: 'Cancel',
+    profile_link_tg_success: 'Telegram account successfully linked!',
+    profile_link_tg_error: 'Failed to link Telegram',
+    profile_link_email_success: 'Verification email sent! Please check your inbox.',
+    profile_link_email_error: 'Failed to link email',
 
     // Payment Success
     payment_checking: 'Confirming Payment...',
@@ -124,6 +134,7 @@ export const translations = {
     login_continue_google: 'Войти через Google',
     login_continue_apple: 'Войти через Apple',
     login_or_email: 'Или по email',
+    login_or_social: 'Или войдите через',
 
     catalog_choose_country: 'Выберите страну',
     catalog_plans_for: 'Тарифы для',
@@ -163,6 +174,15 @@ export const translations = {
     profile_title: 'Мой профиль',
     profile_my_esims: 'Мои eSIM',
     profile_view_qr: 'Показать QR-код',
+    profile_link_email: 'Привязать Email',
+    profile_link_telegram: 'Привязать Telegram',
+    profile_link_email_desc: 'Привязка Email',
+    profile_link: 'Привязать',
+    profile_cancel: 'Отмена',
+    profile_link_tg_success: 'Аккаунт Telegram успешно привязан!',
+    profile_link_tg_error: 'Ошибка привязки Telegram',
+    profile_link_email_success: 'Письмо с подтверждением отправлено! Проверьте почту.',
+    profile_link_email_error: 'Ошибка привязки email',
 
     payment_checking: 'Проверка платежа...',
     payment_checking_desc: 'Пожалуйста, подождите, мы проверяем транзакцию и генерируем вашу eSIM.',
@@ -215,6 +235,7 @@ export const translations = {
     login_continue_google: 'Увійти через Google',
     login_continue_apple: 'Увійти через Apple',
     login_or_email: 'Або через email',
+    login_or_social: 'Або увійдіть через',
 
     catalog_choose_country: 'Оберіть країну',
     catalog_plans_for: 'Тарифи для',
@@ -254,6 +275,15 @@ export const translations = {
     profile_title: 'Мій профіль',
     profile_my_esims: 'Мої eSIM',
     profile_view_qr: 'Показати QR-код',
+    profile_link_email: 'Прив\'язати Email',
+    profile_link_telegram: 'Прив\'язати Telegram',
+    profile_link_email_desc: 'Прив\'язка Email',
+    profile_link: 'Прив\'язати',
+    profile_cancel: 'Скасувати',
+    profile_link_tg_success: 'Акаунт Telegram успішно прив\'язано!',
+    profile_link_tg_error: 'Помилка прив\'язки Telegram',
+    profile_link_email_success: 'Лист із підтвердженням надіслано! Перевірте пошту.',
+    profile_link_email_error: 'Помилка прив\'язки email',
 
     payment_checking: 'Перевірка платежу...',
     payment_checking_desc: 'Будь ласка, зачекайте, ми перевіряємо транзакцію та генеруємо вашу eSIM.',
@@ -306,6 +336,7 @@ export const translations = {
     login_continue_google: 'Pokračovat s Googlem',
     login_continue_apple: 'Pokračovat s Applem',
     login_or_email: 'Nebo pomocí emailu',
+    login_or_social: 'Nebo pokračujte pomocí',
 
     catalog_choose_country: 'Vyberte zemi',
     catalog_plans_for: 'Tarify pro',
@@ -345,6 +376,15 @@ export const translations = {
     profile_title: 'Můj profil',
     profile_my_esims: 'Moje eSIM',
     profile_view_qr: 'Zobrazit QR kód',
+    profile_link_email: 'Propojit Email',
+    profile_link_telegram: 'Propojit Telegram',
+    profile_link_email_desc: 'Propojit e-mailovou adresu',
+    profile_link: 'Propojit',
+    profile_cancel: 'Zrušit',
+    profile_link_tg_success: 'Účet Telegram úspěšně propojen!',
+    profile_link_tg_error: 'Propojení Telegramu se nezdařilo',
+    profile_link_email_success: 'Ověřovací e-mail byl odeslán! Zkontrolujte doručenou poštu.',
+    profile_link_email_error: 'Propojení e-mailu se nezdařilo',
 
     payment_checking: 'Ověřování platby...',
     payment_checking_desc: 'Prosím čekejte, ověřujeme vaši transakci a generujeme vaši eSIM.',
@@ -375,9 +415,67 @@ export const translations = {
   }
 };
 
-export function t(lang: Language, key: keyof typeof translations['en'], params?: Record<string, string | number>): string {
+const iso3to2: Record<string, string> = {
+  AFG: 'AF', ALA: 'AX', ALB: 'AL', DZA: 'DZ', ASM: 'AS', AND: 'AD', AGO: 'AO',
+  AIA: 'AI', ATA: 'AQ', ATG: 'AG', ARG: 'AR', ARM: 'AM', ABW: 'AW', AUS: 'AU',
+  AUT: 'AT', AZE: 'AZ', BHS: 'BS', BHR: 'BH', BGD: 'BD', BRB: 'BB', BLR: 'BY',
+  BEL: 'BE', BLZ: 'BZ', BEN: 'BJ', BMU: 'BM', BTN: 'BT', BOL: 'BO', BES: 'BQ',
+  BIH: 'BA', BWA: 'BW', BVT: 'BV', BRA: 'BR', IOT: 'IO', BRN: 'BN', BGR: 'BG',
+  BFA: 'BF', BDI: 'BI', CPV: 'CV', KHM: 'KH', CMR: 'CM', CAN: 'CA', CYM: 'KY',
+  CAF: 'CF', TCD: 'TD', CHL: 'CL', CHN: 'CN', CXR: 'CX', CCK: 'CC', COL: 'CO',
+  COM: 'KM', COG: 'CG', COD: 'CD', COK: 'CK', CRI: 'CR', CIV: 'CI', HRV: 'HR',
+  CUB: 'CU', CUW: 'CW', CYP: 'CY', CZE: 'CZ', DNK: 'DK', DJI: 'DJ', DMA: 'DM',
+  DOM: 'DO', ECU: 'EC', EGY: 'EG', SLV: 'SV', GNQ: 'GQ', ERI: 'ER', EST: 'EE',
+  SWZ: 'SZ', ETH: 'ET', FLK: 'FK', FRO: 'FO', FJI: 'FJ', FIN: 'FI', FRA: 'FR',
+  GUF: 'GF', PYF: 'PF', ATF: 'TF', GAB: 'GA', GMB: 'GM', GEO: 'GE', DEU: 'DE',
+  GHA: 'GH', GIB: 'GI', GRC: 'GR', GRL: 'GL', GRD: 'GD', GLP: 'GP', GUM: 'GU',
+  GTM: 'GT', GGY: 'GG', GIN: 'GN', GNB: 'GW', GUY: 'GY', HTI: 'HT', HMD: 'HM',
+  VAT: 'VA', HND: 'HN', HKG: 'HK', HUN: 'HU', ISL: 'IS', IND: 'IN', IDN: 'ID',
+  IRN: 'IR', IRQ: 'IQ', IRL: 'IE', IMN: 'IM', ISR: 'IL', ITA: 'IT', JAM: 'JM',
+  JPN: 'JP', JEY: 'JE', JOR: 'JO', KAZ: 'KZ', KEN: 'KE', KIR: 'KI', PRK: 'KP',
+  KOR: 'KR', KWT: 'KW', KGZ: 'KG', LAO: 'LA', LVA: 'LV', LBN: 'LB', LSO: 'LS',
+  LBR: 'LR', LBY: 'LY', LIE: 'LI', LTU: 'LT', LUX: 'LU', MAC: 'MO', MDG: 'MG',
+  MWI: 'MW', MYS: 'MY', MDV: 'MV', MLI: 'ML', MLT: 'MT', MHL: 'MH', MTQ: 'MQ',
+  MRT: 'MR', MUS: 'MU', MYT: 'YT', MEX: 'MX', FSM: 'FM', MDA: 'MD', MCO: 'MC',
+  MNG: 'MN', MNE: 'ME', MSR: 'MS', MAR: 'MA', MOZ: 'MZ', MMR: 'MM', NAM: 'NA',
+  NRU: 'NR', NPL: 'NP', NLD: 'NL', NCL: 'NC', NZL: 'NZ', NIC: 'NI', NER: 'NE',
+  NGA: 'NG', NIU: 'NU', NFK: 'NF', MKD: 'MK', MNP: 'MP', NOR: 'NO', OMN: 'OM',
+  PAK: 'PK', PLW: 'PW', PSE: 'PS', PAN: 'PA', PNG: 'PG', PRY: 'PY', PER: 'PE',
+  PHL: 'PH', PCN: 'PN', POL: 'PL', PRT: 'PT', PRI: 'PR', QAT: 'QA', REU: 'RE',
+  ROU: 'RO', RUS: 'RU', RWA: 'RW', BLM: 'BL', SHN: 'SH', KNA: 'KN', LCA: 'LC',
+  MAF: 'MF', SPM: 'PM', VCT: 'VC', WSM: 'WS', SMR: 'SM', STP: 'ST', SAU: 'SA',
+  SEN: 'SN', SRB: 'RS', SYC: 'SC', SLE: 'SL', SGP: 'SG', SXM: 'SX', SVK: 'SK',
+  SVN: 'SI', SLB: 'SB', SOM: 'SO', ZAF: 'ZA', SGS: 'GS', SSD: 'SS', ESP: 'ES',
+  LKA: 'LK', SDN: 'SD', SUR: 'SR', SJM: 'SJ', SWE: 'SE', CHE: 'CH', SYR: 'SY',
+  TWN: 'TW', TJK: 'TJ', TZA: 'TZ', THA: 'TH', TLS: 'TL', TGO: 'TG', TKL: 'TK',
+  TON: 'TO', TTO: 'TT', TUN: 'TN', TUR: 'TR', TKM: 'TM', TCA: 'TC', TUV: 'TV',
+  UGA: 'UG', UKR: 'UA', ARE: 'AE', GBR: 'GB', USA: 'US', UMI: 'UM', URY: 'UY',
+  UZB: 'UZ', VUT: 'VU', VEN: 'VE', VNM: 'VN', VGB: 'VG', VIR: 'VI', WLF: 'WF',
+  ESH: 'EH', YEM: 'YE', ZMB: 'ZM', ZWE: 'ZW'
+};
+
+export function t(lang: Language, key: string, params?: Record<string, string | number>): string {
+  if (key.startsWith('country_')) {
+    let code = key.replace('country_', '').toUpperCase();
+    if (code.length === 3 && iso3to2[code]) {
+      code = iso3to2[code];
+    }
+    if (code.length === 2) {
+      try {
+        const localeMap: Record<Language, string> = { en: 'en-US', ru: 'ru-RU', uk: 'uk-UA', cs: 'cs-CZ' };
+        const displayNames = new Intl.DisplayNames([localeMap[lang]], { type: 'region' });
+        const name = displayNames.of(code);
+        if (name) return name;
+      } catch (e) {
+        // Fallback to manual dictionary if Intl fails
+      }
+    }
+  }
+
   const dictionary = translations[lang] || translations['en'];
-  let text = dictionary[key] || translations['en'][key] || key;
+  let text = (dictionary as any)[key] || (translations['en'] as any)[key];
+  
+  if (!text) return '';
   
   if (params) {
     for (const [k, v] of Object.entries(params)) {

@@ -7,6 +7,8 @@ import { Support } from './pages/Support';
 import { Login } from './pages/Login';
 import { Profile } from './pages/Profile';
 import { PaymentSuccess } from './pages/PaymentSuccess';
+import { VerifyEmail } from './pages/VerifyEmail';
+import { AuthCallback } from './pages/AuthCallback';
 import { useEffect } from 'react';
 import { useAuthStore } from './store/useAuthStore';
 import { SwipeableRoutes } from './components/SwipeableRoutes';
@@ -35,6 +37,8 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/auth-callback" element={<AuthCallback />} />
             </Routes>
           </SwipeableRoutes>
         </main>

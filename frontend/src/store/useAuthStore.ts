@@ -5,6 +5,7 @@ export interface User {
   id: number;
   telegram_id: number | null;
   email: string | null;
+  is_email_verified: boolean;
   balance: number;
   language: string;
   orders: any[];

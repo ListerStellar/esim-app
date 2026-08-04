@@ -117,16 +117,23 @@ export const Catalog = () => {
       
       {!selectedCountry ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {countries.map(c => (
-            <button
-              key={c}
-              onClick={() => setSelectedCountry(c)}
-              className="glass-panel p-6 flex flex-col items-center justify-center gap-3 transition-transform hover:scale-105 active:scale-95"
-            >
-              <img src={`https://flagcdn.com/w80/${c.toLowerCase()}.png`} alt={names[c] || c} className="w-16 h-12 object-cover rounded-lg shadow-md mb-2" />
-              <div className="font-semibold text-center">{names[c] || c}</div>
-            </button>
-          ))}
+          {countries.map(c => {
+            const translatedName = t(language, `country_${c.toLowerCase()}`) || names[c] || c;
+            // flagcdn uses ISO2 (lowercase). If c is ISO3 (e.g. FRA), it won't work without mapping. 
+            // We can just use the first 2 letters as a rough fallback or handle it if it's ISO2.
+            const flagCode = c.length === 3 ? c.substring(0, 2).toLowerCase() : c.toLowerCase();
+            return (
+              <button
+                key={c}
+                onClick={() => setSelectedCountry(c)}
+                className="glass-panel p-6 flex flex-col items-center justify-center gap-3 transition-transform hover:scale-105 active:scale-95"
+              >
+                <img src={`https://flagcdn.com/w80/${flagCode}.png`} alt={translatedName} className="w-16 h-12 object-cover rounded-lg shadow-md mb-2" 
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                <div className="font-semibold text-center">{translatedName}</div>
+              </button>
+            );
+          })}
         </div>
       ) : (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -136,7 +143,7 @@ export const Catalog = () => {
           >
             ← {t(language, 'catalog_back')}
           </button>
-          <h3 className="text-2xl font-bold mb-6">{t(language, 'catalog_plans_for')} {names[selectedCountry]}</h3>
+          <h3 className="text-2xl font-bold mb-6">{t(language, 'catalog_plans_for')} {t(language, `country_${selectedCountry.toLowerCase()}`) || names[selectedCountry]}</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             {plans.map(p => (
               <div key={p.plan_id} className="glass-panel p-6 flex flex-col justify-between">
@@ -169,7 +176,7 @@ export const Catalog = () => {
             </button>
             <h3 className="text-2xl font-bold mb-2">{t(language, 'catalog_select_payment')}</h3>
             <p className="text-slate-400 mb-6">
-              {t(language, 'catalog_you_are_buying', { country: paymentPlan.country_name, gb: paymentPlan.data_gb, price: paymentPlan.price_eur })}
+              {t(language, 'catalog_you_are_buying', { country: t(language, `country_${paymentPlan.country_code.toLowerCase()}`) || paymentPlan.country_name, gb: paymentPlan.data_gb, price: paymentPlan.price_eur })}
             </p>
             
             <div className="space-y-3">

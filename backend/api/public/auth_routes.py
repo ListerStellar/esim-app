@@ -13,8 +13,9 @@ from datetime import datetime, timedelta, timezone
 
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
 
-from database.db import get_session, User, RefreshToken
+from database.db import get_session, User, RefreshToken, EmailVerificationToken
 from auth.security import get_password_hash, verify_password, create_access_token, PUBLIC_KEY
+from services.email import send_verification_email
 from config import config
 from authlib.integrations.starlette_client import OAuth
 from starlette.requests import Request
@@ -30,18 +31,6 @@ oauth.register(
     client_secret=config.GOOGLE_CLIENT_SECRET,
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={'scope': 'openid email profile'}
-)
-
-oauth.register(
-    name='apple',
-    client_id=config.APPLE_CLIENT_ID,
-    client_secret=config.APPLE_PRIVATE_KEY,
-    server_metadata_url='https://appleid.apple.com/.well-known/openid-configuration',
-    client_kwargs={
-        'scope': 'name email',
-        'response_mode': 'form_post',
-        'response_type': 'code id_token'
-    }
 )
 
 class RegisterRequest(BaseModel):
@@ -88,7 +77,7 @@ async def create_tokens_for_user(user: User, session: AsyncSession) -> TokenResp
     
     return TokenResponse(access_token=access_token, refresh_token=plain_refresh_token)
 
-@router.post("/register", response_model=TokenResponse)
+@router.post("/register")
 @limiter.limit("10/minute")
 async def register(request: Request, req: RegisterRequest, session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(User).filter(User.email == req.email))
@@ -107,12 +96,29 @@ async def register(request: Request, req: RegisterRequest, session: AsyncSession
         hashed_password=get_password_hash(req.password),
         referral_code=generate_referral_code(),
         referred_by=referred_by_id,
+        is_email_verified=False
     )
     session.add(new_user)
     await session.commit()
     await session.refresh(new_user)
     
-    return await create_tokens_for_user(new_user, session)
+    # Generate verification token
+    plain_token = secrets.token_urlsafe(32)
+    hashed_token = hashlib.sha256(plain_token.encode()).hexdigest()
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    
+    verification = EmailVerificationToken(
+        user_id=new_user.id,
+        token=hashed_token,
+        expires_at=expires_at
+    )
+    session.add(verification)
+    await session.commit()
+    
+    # Send email
+    await send_verification_email(new_user.email, plain_token)
+    
+    return {"detail": "verification_required"}
 
 
 @router.post("/token", response_model=TokenResponse)
@@ -126,6 +132,9 @@ async def login_for_access_token(request: Request, form_data: OAuth2PasswordRequ
         
     if user.is_banned:
         raise HTTPException(status_code=403, detail="User is banned")
+        
+    if not user.is_email_verified:
+        raise HTTPException(status_code=403, detail="Email not verified. Please check your inbox (and spam folder).")
         
     if user.locked_until and user.locked_until > datetime.now(timezone.utc):
         raise HTTPException(status_code=403, detail="Account temporarily locked. Please try again later.")
@@ -145,7 +154,7 @@ async def login_for_access_token(request: Request, form_data: OAuth2PasswordRequ
     return await create_tokens_for_user(user, session)
 
 
-async def _process_oauth_user(session: AsyncSession, email: str, google_id: str = None, apple_id: str = None, full_name: str = None) -> TokenResponse:
+async def _process_oauth_user(session: AsyncSession, email: str, google_id: str = None, full_name: str = None) -> TokenResponse:
     result = await session.execute(select(User).filter(User.email == email))
     user = result.scalars().first()
     
@@ -153,9 +162,6 @@ async def _process_oauth_user(session: AsyncSession, email: str, google_id: str 
         changed = False
         if google_id and not user.google_id:
             user.google_id = google_id
-            changed = True
-        if apple_id and not user.apple_id:
-            user.apple_id = apple_id
             changed = True
         if full_name and not user.full_name:
             user.full_name = full_name
@@ -172,9 +178,9 @@ async def _process_oauth_user(session: AsyncSession, email: str, google_id: str 
     new_user = User(
         email=email,
         google_id=google_id,
-        apple_id=apple_id,
         full_name=full_name,
-        referral_code=generate_referral_code()
+        referral_code=generate_referral_code(),
+        is_email_verified=True # OAuth emails are pre-verified
     )
     session.add(new_user)
     await session.commit()
@@ -185,8 +191,10 @@ async def _process_oauth_user(session: AsyncSession, email: str, google_id: str 
 
 @router.get("/google/login")
 async def google_login(request: Request):
-    redirect_uri = request.url_for('google_callback')
-    return await oauth.google.authorize_redirect(request, str(redirect_uri))
+    redirect_uri = str(request.url_for('google_callback'))
+    if "ngrok" in redirect_uri and redirect_uri.startswith("http://"):
+        redirect_uri = redirect_uri.replace("http://", "https://")
+    return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get("/google/callback")
 async def google_callback(request: Request, session: AsyncSession = Depends(get_session)):
@@ -205,42 +213,13 @@ async def google_callback(request: Request, session: AsyncSession = Depends(get_
     if not email:
         raise HTTPException(status_code=400, detail="Google account has no email")
         
-    return await _process_oauth_user(session, email, google_id=google_id, full_name=user_info.get('name'))
-
-@router.get("/apple/login")
-async def apple_login(request: Request):
-    redirect_uri = request.url_for('apple_callback')
-    return await oauth.apple.authorize_redirect(request, str(redirect_uri))
-
-@router.post("/apple/callback")
-@router.get("/apple/callback")
-async def apple_callback(request: Request, session: AsyncSession = Depends(get_session)):
-    try:
-        token = await oauth.apple.authorize_access_token(request)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth error: {str(e)}")
-        
-    user_info = token.get('userinfo')
-    if not user_info:
-        raise HTTPException(status_code=400, detail="Could not get user info from Apple")
-    
-    email = user_info.get('email')
-    apple_id = user_info.get('sub')
-    
-    if not email:
-        raise HTTPException(status_code=400, detail="Apple account has no email")
-        
-    return await _process_oauth_user(session, email, apple_id=apple_id)
-
+    tokens = await _process_oauth_user(session, email, google_id=google_id, full_name=user_info.get('name'))
+    redirect_url = f"{config.FRONTEND_URL}/auth-callback?access_token={tokens.access_token}&refresh_token={tokens.refresh_token}"
+    return RedirectResponse(url=redirect_url)
 
 import time
 
-@router.post("/telegram", response_model=TokenResponse)
-async def login_via_telegram(req: TelegramLoginRequest, session: AsyncSession = Depends(get_session)):
-    bot_token = os.getenv("BOT_TOKEN")
-    if not bot_token:
-        raise HTTPException(status_code=500, detail="Bot token not configured")
-        
+def verify_telegram_auth_data(req: TelegramLoginRequest, bot_token: str):
     # Check if auth data is outdated (older than 24 hours) to prevent replay attacks
     if time.time() - req.auth_date > 86400:
         raise HTTPException(status_code=401, detail="Telegram authentication data is outdated")
@@ -253,6 +232,14 @@ async def login_via_telegram(req: TelegramLoginRequest, session: AsyncSession = 
     
     if expected_hash != req.hash:
         raise HTTPException(status_code=401, detail="Invalid Telegram authentication")
+
+@router.post("/telegram", response_model=TokenResponse)
+async def login_via_telegram(req: TelegramLoginRequest, session: AsyncSession = Depends(get_session)):
+    bot_token = os.getenv("BOT_TOKEN")
+    if not bot_token:
+        raise HTTPException(status_code=500, detail="Bot token not configured")
+        
+    verify_telegram_auth_data(req, bot_token)
         
     result = await session.execute(select(User).filter(User.telegram_id == req.id))
     user = result.scalars().first()
@@ -267,7 +254,8 @@ async def login_via_telegram(req: TelegramLoginRequest, session: AsyncSession = 
             telegram_id=req.id,
             username=req.username,
             full_name=full_name,
-            referral_code=generate_referral_code()
+            referral_code=generate_referral_code(),
+            is_email_verified=True
         )
         session.add(user)
         await session.commit()
@@ -277,6 +265,33 @@ async def login_via_telegram(req: TelegramLoginRequest, session: AsyncSession = 
         raise HTTPException(status_code=403, detail="User is banned")
         
     return await create_tokens_for_user(user, session)
+
+
+@router.post("/verify-email")
+async def verify_email(req: RefreshRequest, session: AsyncSession = Depends(get_session)):
+    # Reusing RefreshRequest since it just has one string field, but let's parse the token properly
+    token = req.refresh_token 
+    hashed_token = hashlib.sha256(token.encode()).hexdigest()
+    
+    result = await session.execute(
+        select(EmailVerificationToken).filter(EmailVerificationToken.token == hashed_token)
+    )
+    db_token = result.scalars().first()
+    
+    if not db_token or db_token.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invalid or expired verification link")
+        
+    user_res = await session.execute(select(User).filter(User.id == db_token.user_id))
+    user = user_res.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
+        
+    user.is_email_verified = True
+    await session.delete(db_token)
+    await session.commit()
+    
+    return {"detail": "Email successfully verified"}
 
 
 @router.post("/refresh", response_model=TokenResponse)

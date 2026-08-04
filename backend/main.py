@@ -24,6 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
 from starlette.middleware.sessions import SessionMiddleware
 from config import config
 app.add_middleware(SessionMiddleware, secret_key=config.SECRET_KEY)
@@ -52,7 +55,7 @@ app.include_router(auth_routes.router, prefix="/api")
 app.include_router(public_catalog.router, prefix="/api")
 app.include_router(public_users.router, prefix="/api")
 app.include_router(public_transactions.router, prefix="/api")
-app.include_router(webhooks.router)
+app.include_router(webhooks.router, prefix="/api")
 
 @app.get("/health")
 async def health_check():

@@ -22,8 +22,8 @@ class User(Base):
     username: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     full_name: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(128), unique=True, nullable=True)
+    is_email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     google_id: Mapped[Optional[str]] = mapped_column(String(128), unique=True, index=True, nullable=True)
-    apple_id: Mapped[Optional[str]] = mapped_column(String(128), unique=True, index=True, nullable=True)
     hashed_password: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
     language: Mapped[str] = mapped_column(String(8), default="en")
     balance: Mapped[float] = mapped_column(Float, default=0.0)
@@ -82,6 +82,18 @@ class RefreshToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
+
+
+class EmailVerificationToken(Base):
+    __tablename__ = "email_verification_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    user: Mapped["User"] = relationship("User")
 
 
 async def init_db():
